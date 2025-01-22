@@ -19,3 +19,13 @@ def update_user(user_data):
     for field, value in user_data.items():
         setattr(user, field, value)
     user.save()
+def authenticate_user(username, password,):
+    try:
+        user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        raise ValidationError("Invalid credentials!")
+
+    if not user.check_password(password, user.password):
+        raise ValidationError("Invalid credentials!")
+    
+    return user

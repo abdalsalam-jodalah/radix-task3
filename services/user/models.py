@@ -10,7 +10,7 @@ class User(BaseModelMixin):# id , craeted_at, updeted_at
         verbose_name_plural = "Users"
         db_table = 'user_table'
         ordering = ['-created_at']
-        
+          
     class RoleChoices(models.TextChoices):
         ADMIN = "admin"
         USER = "user"
@@ -25,14 +25,14 @@ class User(BaseModelMixin):# id , craeted_at, updeted_at
     def last_login_from(self):
         return  timezone.now() - self.updated_at
 
-    def __str__(self):
-        return f"user name: {self.username} | name: {self.name} | role: {self.role} |isLoggedIn: {self.isLoggedIn} "
+    # def __str__(self):
+    #     return f"user name: {self.username} | name: {self.name} | role: {self.role} |isLoggedIn: {self.isLoggedIn} "
     
     def save(self, *args, **kwargs):
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
-        # if User.objects.filter(username=self.username):
-        if User.objects.filter(username=self.username).exclude(id=self.id).exists():
+        if User.objects.filter(username=self.username):
+        # if User.objects.filter(username=self.username).exclude(id=self.id).exists():
             raise ValidationError("Email is already in use!")
         super().save(*args, **kwargs)
     
