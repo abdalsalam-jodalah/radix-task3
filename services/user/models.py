@@ -17,9 +17,9 @@ class User(BaseModelMixin):# id , craeted_at, updeted_at
 
     role = models.CharField(max_length=5, choices= RoleChoices, default=RoleChoices.USER)
     name = models.CharField(max_length=255)
-    username = models.CharField(unique=True) #email
-    password = models.CharField(max_length=255, write_only=True)
-    isLoggedIn = models.BooleanField(default=False, read_only=True)
+    username = models.CharField(max_length=255,unique=True) #email
+    password = models.CharField(max_length=255)
+    isLoggedIn = models.BooleanField(default=False)
     
     @property
     def last_login_from(self):
@@ -32,7 +32,7 @@ class User(BaseModelMixin):# id , craeted_at, updeted_at
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         # if User.objects.filter(username=self.username):
-        if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+        if User.objects.filter(username=self.username).exclude(id=self.id).exists():
             raise ValidationError("Email is already in use!")
         super().save(*args, **kwargs)
     
