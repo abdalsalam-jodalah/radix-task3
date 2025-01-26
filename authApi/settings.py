@@ -29,7 +29,7 @@ SECRET_KEY = "django-insecure-$sj&*m3(8xsk)=_3p3dg(@+l77k09f+pfkn9r34!+_y&t5u$9^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -138,7 +138,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DB', 
+        'NAME': 'DB2', 
         'USER': 'root', 
         'PASSWORD': '123456789', 
         'HOST': 'localhost',  
@@ -153,10 +153,10 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
     'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',  # Ensures the `id` field (UUID) is used
-    'USER_ID_CLAIM': 'user_id',  # Default is 'user_id' 
+    'SIGNING_KEY': SECRET_KEY,
 }
-# AUTH_USER_MODEL = 'user.User'
+
+AUTH_USER_MODEL = 'user.User'
