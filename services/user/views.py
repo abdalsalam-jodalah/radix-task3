@@ -1,5 +1,5 @@
 from rest_framework import status, generics
-from .serializers import UserSerializer, RegisterSerializer
+from .serializers import UserSerializer
 from .models import User
 
 from .components import get_user_by_id, get_all_users, create_user, update_user
