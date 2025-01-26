@@ -1,8 +1,5 @@
-from django.http import JsonResponse
 from rest_framework import status, generics
-from .serializers import UserSerializer
-# from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, RegisterSerializer
 from .models import User
 
 from .components import get_user_by_id, get_all_users, create_user, update_user
@@ -10,10 +7,8 @@ from .components import *
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -30,7 +25,7 @@ class UserListView(generics.ListAPIView):
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all() 
     serializer_class = UserSerializer
-    # lookup_field = 'user_id'           # back here
+    lookup_field = 'id'           # back here
     permission_classes=[IsAuthenticated]
 
 class UserCreateView(generics.CreateAPIView):
@@ -68,4 +63,3 @@ class UserLoginView(APIView):
                 'refresh_token': str(refresh)
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
-    

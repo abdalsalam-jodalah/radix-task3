@@ -23,9 +23,8 @@ def authenticate_user(username, password,):
     try:
         user = User.objects.get(username=username)
     except User.DoesNotExist:
-        raise ValidationError("Invalid credentials!")
-
-    if not user.check_password(password, user.password):
-        raise ValidationError("Invalid credentials!")
+        return None
+    if not user.check_password(password):
+        return None
     
     return user
