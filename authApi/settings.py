@@ -160,4 +160,3 @@ SIMPLE_JWT = {
 }
 
 AUTH_USER_MODEL = 'user.User'
-AUTHENTICATION_BACKENDS = ['user.backends.CustomAuthBackend']
