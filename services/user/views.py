@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-
+from django.http import JsonResponse
 
 class UserListView(generics.ListAPIView):
 
@@ -62,3 +62,19 @@ class UserLoginView(APIView):
                 'refresh_token': str(refresh)
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+
+def authorized_view(request):
+    """Handle the redirect after successful OAuth authorization."""
+    code = request.GET.get('code', None)
+    error = request.GET.get('error', None)
+    error_description = request.GET.get('error_description', None)
+
+    if error:
+        return JsonResponse({
+            'status': 'error',
+            'error': error,
+            'description': error_description
+        }, status=400)
+    if code:
+        return JsonResponse({'status': 'success', 'code': code})
+    return JsonResponse({'status': 'error', 'message': 'No code provided'}, status=400)
