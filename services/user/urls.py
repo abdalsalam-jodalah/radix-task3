@@ -1,8 +1,8 @@
 from django.urls import path, include
 from .views import   *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from oauth2_provider.views import TokenView, RevokeTokenView
-from oauth2_provider.views import TokenView, AuthorizationView
+# from oauth2_provider.views import TokenView, RevokeTokenView
+# from oauth2_provider.views import TokenView, AuthorizationView
 
 urlpatterns = [
     path('signup/', UserCreateView.as_view(), name='signup'),  
@@ -20,7 +20,7 @@ urlpatterns = [
     path('auth/', include('dj_rest_auth.urls')),  
     path('auth/social/', include('allauth.socialaccount.urls')), 
 
-    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
-    path('o/authorize/', AuthorizationView.as_view(), name='authorize'),
-    path('o/token/', TokenView.as_view(), name='token'),
+    # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
+    # path('o/authorize/', AuthorizationView.as_view(), name='authorize'),
+    # path('o/token/', TokenView.as_view(), name='token'),
 ]
