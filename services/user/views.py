@@ -3,7 +3,6 @@ from .serializers import UserSerializer
 from .models import User
 from .components import UserComponents
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,10 +10,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-from django.contrib.auth.decorators import login_required
 class UserListView(generics.ListAPIView):
 
     serializer_class = UserSerializer
@@ -57,14 +54,33 @@ class UserLoginView(APIView):
         if user:
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
-
+            user.is_logedin =True
+            user.save()
             return Response({
                 'message': 'Login successful!',
                 'access_token': access_token,
                 'refresh_token': str(refresh)
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+class UserLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def post(self, request):
+        try:
+            user = request.user
+            user.is_logedin = False
+            user.save()
+
+            refresh_token = request.data.get("refresh_token")  
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()  
+            logout(request) 
+            
+            return Response({"message": "Logout successful!"}, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 def authorized_view(request):
     code = request.GET.get('code', None)
     error = request.GET.get('error', None)
