@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Welcome to the Dashboard</h1>
+
+    {% if google_data.error %}
+        <p>Error: {{ google_data.error }}</p>
+    {% else %}
+        <h2>Your Google Profile:</h2>
+        <ul>
+            <li><strong>Name:</strong> {{ google_data.name }}</li>
+            <li><strong>Email:</strong> {{ google_data.email }}</li>
+            <li><strong>Picture:</strong> <img src="{{ google_data.picture }}" alt="Profile Picture"></li>
+        </ul>
+    {% endif %}
+</body>
+</html>

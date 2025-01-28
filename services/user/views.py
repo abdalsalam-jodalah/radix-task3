@@ -1,18 +1,20 @@
 from rest_framework import status, generics
 from .serializers import UserSerializer
 from .models import User
-
 from .components import UserComponents
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-
-
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
 class UserListView(generics.ListAPIView):
 
     serializer_class = UserSerializer
@@ -62,3 +64,39 @@ class UserLoginView(APIView):
                 'refresh_token': str(refresh)
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+
+def authorized_view(request):
+    code = request.GET.get('code', None)
+    error = request.GET.get('error', None)
+    error_description = request.GET.get('error_description', None)
+
+    if error:
+        return JsonResponse({
+            'status': 'error',
+            'error': error,
+            'description': error_description
+        }, status=400)
+    if code:
+        return JsonResponse({'status': 'success', 'code': code})
+    return JsonResponse({'status': 'error', 'message': 'No code provided'}, status=400)
+
+
+@login_required
+def dashboard2(request):
+    
+    user = request.user
+    social_account = user.socialaccount_set.filter(provider='google').first()
+    google_data = social_account.extra_data if social_account else {}
+    user.is_logedin = True
+    user.save()
+    return render(request, 'dashboard.html', {'user': user, 'google_data': google_data})
+
+@login_required
+def custom_logout(request):
+    user = request.user
+    user.is_logedin = False
+    user.save()
+
+    logout(request)
+
+    return redirect('account_login') 
