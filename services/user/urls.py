@@ -7,6 +7,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 urlpatterns = [
     path('signup/', UserCreateView.as_view(), name='signup'),  
     path('login/', UserLoginView.as_view(), name='login'),  
+    path('logout/', UserLogoutView.as_view(), name='login'),  
+
     path('users/', UserListView.as_view(), name='list_users'), 
     path('users/<int:id>/', UserDetailView.as_view(), name='get_user'), 
     path('users/edit/<int:id>/', UserUpdateView.as_view(), name='edit_user'),  
@@ -17,8 +19,8 @@ urlpatterns = [
     # path('o/revoke_token/', RevokeTokenView.as_view(), name='revoke_token'),
     # path('oauth/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 
-    path('auth/', include('dj_rest_auth.urls')),  
-    path('auth/social/', include('allauth.socialaccount.urls')), 
+    # path('auth/', include('dj_rest_auth.urls')),  
+    # path('auth/social/', include('allauth.socialaccount.urls')), 
 
     # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     # path('o/authorize/', AuthorizationView.as_view(), name='authorize'),

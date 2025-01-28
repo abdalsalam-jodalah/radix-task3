@@ -1,5 +1,7 @@
 from .models import User
 from django.core.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password  
+
 class UserComponents():
     def get_all_users():
         return User.objects.all()
@@ -22,6 +24,9 @@ class UserComponents():
     def authenticate_user(username, password,):
         try:
             user = User.objects.get(username=username)
+            if not user.password.startswith('pbkdf2_'):
+                user.password = make_password(user.password) 
+                user.save()
         except User.DoesNotExist:
             return None
         if not user.check_password(password):
