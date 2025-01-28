@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password  
+from django.utils.crypto import get_random_string
 
 
 class User(AbstractUser):
@@ -13,7 +14,7 @@ class User(AbstractUser):
     name = models.CharField(max_length=255)
     username = models.EmailField(unique=True)  # Email used for login
     password = models.CharField(max_length=255)
-
+    is_logedin= models.BooleanField(default=False)
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
@@ -21,7 +22,8 @@ class User(AbstractUser):
         ordering = ['-date_joined']
 
     def save(self, *args, **kwargs):
-        # Ensure password is hashed
+        if not self.username:  
+            self.username = f"user_{get_random_string(8)}@gmail.com"
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
