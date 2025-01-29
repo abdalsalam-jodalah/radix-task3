@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.contrib.auth import logout
 from django.shortcuts import redirect
+import uuid
 class UserListView(generics.ListAPIView):
 
     serializer_class = UserSerializer
@@ -50,10 +51,21 @@ class UserLoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
 
+        device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
+        device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
+        user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
+        csrf_token = request.headers.get('X-Csrftoken')
+        cookies = request.headers.get('Cookie')
+        content_type = request.headers.get('Content-Type')
+        
+        device_token = str(uuid.uuid4())    
+        print("request:", request.headers)
         user = UserComponents.authenticate_user(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
+            UserComponents.register_device(user, device_name, device_type, device_token)
+
             user.is_logedin =True
             user.save()
             return Response({
@@ -68,6 +80,10 @@ class UserLogoutView(APIView):
     def post(self, request):
         try:
             user = request.user
+            device_token = request.data.get('device_token')
+            if device_token:
+                UserComponents.logout_device(user, device_token)
+
             user.is_logedin = False
             user.save()
 
@@ -81,6 +97,18 @@ class UserLogoutView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+   
+class UserLogoutAllView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            user = request.user
+            UserComponents.logout_all_devices(user)  
+            return Response({"message": "Logged out from all devices successfully!"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 def authorized_view(request):
     code = request.GET.get('code', None)
     error = request.GET.get('error', None)
@@ -115,4 +143,4 @@ def custom_logout(request):
 
     logout(request)
 
-    return redirect('account_login') 
+    return redirect('account_login')

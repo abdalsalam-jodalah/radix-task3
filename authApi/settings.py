@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'rest_framework.authtoken',
 
     # 'oauth2_provider',
     # 'social_django',
@@ -78,6 +79,7 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
 
@@ -87,7 +89,7 @@ REST_FRAMEWORK = {
     #     'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     # ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  
+        # 'rest_framework.permissions.IsAuthenticated',  
     ],
 }
 
@@ -190,7 +192,7 @@ AUTHENTICATION_BACKENDS = [
 
     # `allauth` specific authentication methods, such as login by email
     'allauth.account.auth_backends.AuthenticationBackend',
-        'social_core.backends.google.GoogleOAuth2',
+    'social_core.backends.google.GoogleOAuth2',
 
 ]
 

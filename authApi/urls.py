@@ -13,7 +13,7 @@ urlpatterns = [
     # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     # path('o/authorize', AuthorizationView.as_view(), name='authorize') ,
     # path('o/authorized/', authorized_view, name='authorized'),
-    # path("", include('services.user.urls') ),
+    path("", include('services.user.urls') ),
     path('accounts/', include('allauth.urls')),
     path('dashboard/', dashboard2, name='dashboard'),
     path('logout/', custom_logout, name='logout'),  # Logout endpoint
