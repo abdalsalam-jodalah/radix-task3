@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'services.user',
+    'services.task'
     'social_django',
     # 'django.contrib.sites',
     'allauth',
