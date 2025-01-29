@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'services.user',
-    'services.task'
+    'services.task',
     'social_django',
     # 'django.contrib.sites',
     'allauth',
@@ -105,6 +105,7 @@ MIDDLEWARE = [
     # 'allauth.account.middleware.AccountMiddleware',  # Add this line
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'authApi.middleware.RequestLoggingMiddleware',
 ]
 
 
@@ -241,3 +242,62 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile' ,
 ]
+
+import os
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "detailed": {
+            "format": "{asctime} [{levelname}] {name} - {message}",
+            "style": "{",
+        },
+    },
+    "root": {
+        "handlers": ["server"],
+        "level": "DEBUG",  # Change to DEBUG to capture all logs
+    },      
+    "handlers": {
+        "views": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "views.log"),
+            "formatter": "detailed",
+        },
+        "serializers": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "serializers.log"),
+            "formatter": "detailed",
+        },
+        "models": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "models.log"),
+            "formatter": "detailed",
+        },
+        "requests": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "requests.log"),
+            "formatter": "detailed",
+        },
+        "server": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "server.log"),
+            "formatter": "detailed",
+        },
+    },
+   "loggers": {
+        "views": {"handlers": ["views"], "level": "DEBUG", "propagate": True},
+        "serializers": {"handlers": ["serializers"], "level": "DEBUG", "propagate": True},
+        "models": {"handlers": ["models"], "level": "DEBUG", "propagate": True},
+        "requests": {"handlers": ["requests"], "level": "INFO", "propagate": True},
+        "django": {"handlers": ["server"], "level": "INFO", "propagate": True},
+},
+}
