@@ -1,20 +1,19 @@
 from rest_framework import status, generics
-from .serializers import UserSerializer
-from .models import User
-from .components import UserComponents
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-import uuid
-class UserListView(generics.ListAPIView):
 
+from .serializers import UserSerializer
+from .models import User, UserDevice
+from .components import UserComponents
+
+class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes=[IsAuthenticated]
 
@@ -54,17 +53,20 @@ class UserLoginView(APIView):
         device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
         device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
         user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
-        csrf_token = request.headers.get('X-Csrftoken')
-        cookies = request.headers.get('Cookie')
-        content_type = request.headers.get('Content-Type')
-        
-        device_token = str(uuid.uuid4())    
-        print("request:", request.headers)
+
+        # device_identifier = f"{username}-{device_name}-{device_type}-{user_agent}"
+        device_identifier = f"{device_name}-{device_type}-{user_agent}"
+
         user = UserComponents.authenticate_user(username=username, password=password)
         if user:
+            existing_device = UserDevice.objects.filter(user=user, device_token=device_identifier).first()
+ 
+            if existing_device and existing_device.is_active:
+                return Response({"error": "This device is already registered and active."}, status=status.HTTP_400_BAD_REQUEST)
+
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
-            UserComponents.register_device(user, device_name, device_type, device_token)
+            UserComponents.register_device(user, device_name, device_type, device_identifier)
 
             user.is_logedin =True
             user.save()
@@ -80,16 +82,30 @@ class UserLogoutView(APIView):
     def post(self, request):
         try:
             user = request.user
-            device_token = request.data.get('device_token')
-            if device_token:
-                UserComponents.logout_device(user, device_token)
+            username = request.data.get('username')
+            device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
+            device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
+            user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
+        
+            # device_identifier = f"{username}-{device_name}-{device_type}-{user_agent}"
+           
 
-            user.is_logedin = False
-            user.save()
+            device_identifier = f"{device_name}-{device_type}-{user_agent}"
+         
 
-            refresh_token = request.data.get("refresh_token")  
-            if refresh_token:
-                token = RefreshToken(refresh_token)
+            if device_identifier is not None:
+              
+                UserComponents.logout_device( device_identifier)
+            UserComponents.logout_user(user)
+
+            auth_header = request.headers.get("Authorization") 
+            if not auth_header or not auth_header.startswith("Bearer "):
+                 return JsonResponse({"error": "Invalid or missing token"}, status=400)
+           
+            token_str = auth_header.split(" ")[1]
+
+            if token_str:
+                token = RefreshToken(token_str)
                 token.blacklist()  
             logout(request) 
             
@@ -104,10 +120,12 @@ class UserLogoutAllView(APIView):
     def post(self, request):
         try:
             user = request.user
+            user.user_id=UserComponents.extract_user_id_from_token(request)
             UserComponents.logout_all_devices(user)  
             return Response({"message": "Logged out from all devices successfully!"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 def authorized_view(request):
     code = request.GET.get('code', None)
@@ -126,7 +144,7 @@ def authorized_view(request):
 
 
 @login_required
-def dashboard2(request):
+def dashboard(request):
     
     user = request.user
     social_account = user.socialaccount_set.filter(provider='google').first()

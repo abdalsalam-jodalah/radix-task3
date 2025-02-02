@@ -67,7 +67,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'rest_framework.authtoken',
-
+    'rest_framework_simplejwt.token_blacklist', 
     # 'oauth2_provider',
     # 'social_django',
     # 'dj_rest_auth',
@@ -143,13 +143,15 @@ DATABASES = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'AUTH_HEADER_TYPES': ('Bearer',),
     'SIGNING_KEY': SECRET_KEY,
+    'BLACKLIST_AFTER_ROTATION': True,
+     "TOKEN_BLACKLIST_ENABLED":True,
 }
 
 AUTH_USER_MODEL = 'user.User'

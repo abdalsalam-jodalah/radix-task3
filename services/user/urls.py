@@ -18,8 +18,8 @@ urlpatterns = [
     path('users/delete/<int:id>/', UserDeleteView.as_view(), name='delete_user'), 
 
     path('accounts/', include('allauth.urls')),
-    path('dashboard/', dashboard2, name='dashboard'),
-    path('logout/', custom_logout, name='logout'),  # Logout endpoint
+    path('dashboard/', dashboard, name='dashboard'),
+    path('oauth/logout/', custom_logout, name='logout'),  # Logout endpoint
 
     # OAuth with local app urls, i just comment it becouse i removed oauth2_provider library during testing google log in 
     # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
