@@ -1,13 +1,12 @@
+import hashlib
 from .models import User, UserDevice
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password  
 from django.utils.timezone import now
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken
-from django.http import JsonResponse
-from django.utils.timezone import now
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.response import Response
+from rest_framework import status
 
 class UserComponents():
     def get_all_users():
@@ -39,40 +38,81 @@ class UserComponents():
             return None
         if not user.check_password(password):
             return None
-        
         return user
     
-    # def register_device(user, device_name, device_type, device_token):
-    #     # Ensure the device is unique or update if it exists
-    #     device, created = UserDevice.objects.update_or_create(
-    #         user=user,
-    #         device_token=device_token ,
-    #         defaults={
-    #             "device_name": device_name or "Unknown Device",
-    #             "device_type": device_type or "Unknown Type",
-    #             "is_active": True,
-    #             "login_time": now(),
-    #             "logout_time": None
-    #         }
-    #     )
-    #     if not created:
-    #         device.is_active = True
-    #         device.login_time = now()
-    #         device.logout_time = None
-    #         device.save()
+    def logout_token(token):
+        # i think no need to distroy token since i made new  permission : IsSingleDevice, but i kept it ensure that 
+        pass
+    def logout_user(user):
+        try:
+            user.is_logedin = False
+            user.save()
+        except UserDevice.DoesNotExist:
+            raise ValidationError("User not found or already logged out.")
+         
 
-    def register_device(user, device_name, device_type, device_token):
-        # Ensure a device is unique per user
+    def extract_token(auth_header):
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return None 
+        try:
+            token_str = auth_header.split(" ")[2]  
+            token = AccessToken(token_str) 
+            return token
+        except Exception:
+            return None  
+
+    def extract_user_id_from_auth_header(auth_header):
+        try:
+            token_str = UserComponents.extract_token(auth_header)
+            return token_str.payload["user_id"]  
+        except Exception as err:
+            return None  
+        
+    def fetch_user_request(request):
+       return {
+            "username": request.data.get("username"),
+            "password": request.data.get("password"),
+            "device_name": request.headers.get("Sec-Ch-Ua-Platform", "Unknown Device"),
+            "device_type": request.headers.get("Sec-Ch-Ua", "Unknown Device"),
+            "user_agent": request.headers.get("User-Agent", "Unknown User Agent"),
+            "auth_header":request.headers.get("Authorization")
+        }
+    #########################################################################################
+    def sign_user(user, device_name, device_type , user_agent ):# i feel it should not be extracted from UserLoginView
+        device_identifier = UserDeviceComponents.generate_device_id(user.id, device_name, device_type, user_agent)
+        device = UserDeviceComponents.authenticate_device(user, device_identifier)
+        if device.get("status") == "exist_active":
+            return Response({"error": "This device is already registered and active."}, status=status.HTTP_226_IM_USED)
+
+        refresh = RefreshToken.for_user(user)
+        UserDeviceComponents.logout_all_devices_for_user(user)
+        UserDeviceComponents.register_device(user, device_name, device_type, device_identifier, device.get("status"))
+        user.is_logedin =True
+        user.save()
+        return refresh
+    
+class UserDeviceComponents():
+    def generate_device_id(user_id, device_name, device_type,user_agent):
+        raw_data = f"{user_id}-{device_name}-{device_type}-{user_agent}"
+        return hashlib.sha256(raw_data.encode()).hexdigest()
+
+    def authenticate_device(user, device_token ):
         existing_device = UserDevice.objects.filter(user=user, device_token=device_token).first()
 
-        if existing_device:
-            # Update existing device status if found
+        if existing_device and existing_device.is_active:
+            return {"status": "exist_active"}
+        if existing_device and not existing_device.is_active:
+            return {"status": "exist_not_active"}
+        return {"status": "not_exist"}
+        
+    def register_device(user, device_name, device_type, device_token,status):
+        if status == "exist_not_active" :
+            existing_device = UserDevice.objects.filter(user=user, device_token=device_token).first()
             existing_device.is_active = True
             existing_device.login_time = now()
             existing_device.logout_time = None
             existing_device.save()
-        else:
-            # Create new device entry if it doesn't exist
+        elif status == "not_exist" :
             UserDevice.objects.create(
                 user=user,
                 device_name=device_name or "Unknown Device",
@@ -82,77 +122,22 @@ class UserComponents():
                 login_time=now(),
                 logout_time=None
             )
-
-
-    def logout_user(user):
+    def logout_device_basedon_token(device_identifier):
         try:
-            user.is_logedin = False
-            user.save()
-        except UserDevice.DoesNotExist:
-            raise ValidationError("User not found or already logged out.")
-         
-    def logout_device(device_identifier):
-        try:
-            device = UserDevice.objects.get( device_token =  device_identifier.lower())
-            device.is_active = False
-            device.logout_time = now()
-            device.save()
+            device = UserDevice.objects.get(device_token=device_identifier.lower())
+            UserDeviceComponents.logout_device(device)
         except UserDevice.DoesNotExist:
             raise ValidationError("Device not found or already logged out.")
          
-    def logout_all_devices(user):
-        user.is_logedin = False
-        user.save()
-        # UserDevice.objects.filter(user=user, is_active=True).update(is_active=False, logout_time=now())
-        devices = UserDevice.objects.filter( user_id =  user.user_id)
-        for device in devices:
-        # Set device status as inactive and log out time
-            device.is_active = False
-            device.logout_time = now()
-            device.save()  # Save the device object to persist changes
-
+    def logout_all_devices_for_user(user):
         try:
-            tokens = OutstandingToken.objects.get()
-            for token in tokens:
-                
-            # Add token to BlacklistedToken table
-                BlacklistedToken.objects.create(token=token)
-        except Exception as e:
-             raise ValidationError(f"Error blacklisting tokens: {e}")
-    # def extract_user_id_from_token(request):
-    #     auth_header = request.headers.get("Authorization")
-
-    #     if not auth_header or not auth_header.startswith("Bearer "):
-    #         return JsonResponse({"error": "Invalid or missing token"}, status=400)
-
-    #     try:
-    #         # Extract only the token part
-    #         token_str = auth_header.split(" ")[1]
-
-    #         # Decode the token
-    #         token = AccessToken(token_str)
-    #         user_id = token["user_id"]  # Extract user ID from token payload
-
-    #         return JsonResponse({"user_id": user_id})
-
-    #     except Exception as e:
-    #         return JsonResponse({"error": "Invalid or expired token"}, status=400)
-
-    def extract_user_id_from_token(request):
-        auth_header = request.headers.get("Authorization")
-       
-        if not auth_header or not auth_header.startswith("Bearer "):
-            
-            return None  # Return None if the token is missing or invalid
-       
-        try:
-          
-            token_str = auth_header.split(" ")[2]  # Extract the token part
-           
-            token = AccessToken(token_str)  # Decode the token
-            
-
-            return token["user_id"]  # Return the user ID directly
-
-        except Exception:
-            return None  # Return None if the token is invalid or expired
+            devices = UserDevice.objects.filter(user_id=user.id)
+            for device in devices:
+                UserDeviceComponents.logout_device(device)
+        except UserDevice.DoesNotExist:
+            raise ValidationError("Device not found or already logged out.")
+    
+    def logout_device(device):
+        device.is_active = False
+        device.logout_time = now()
+        device.save()  

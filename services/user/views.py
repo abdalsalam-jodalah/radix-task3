@@ -1,41 +1,40 @@
 from rest_framework import status, generics
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.http import JsonResponse
+from rest_framework.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-
+from .permissions import IsSingleDevice
 from .serializers import UserSerializer
-from .models import User, UserDevice
-from .components import UserComponents
+from .models import User
+from .components import UserComponents, UserDeviceComponents
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes=[IsAuthenticated]
-
+    permission_classes=[IsAuthenticated,IsSingleDevice]
     def get_queryset(self):
         return UserComponents.get_all_users()
     
 class UserDetailView(generics.RetrieveAPIView):
-    queryset = User.objects.all() 
     serializer_class = UserSerializer
-    lookup_field = 'id'           # back here
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsSingleDevice]
+    def get_queryset(self):
+        user_id = self.kwargs.get('id')  
+        return UserComponents.get_user_by_id(user_id)    
 
 class UserCreateView(generics.CreateAPIView):
     serializer_class = UserSerializer
-
+   
     def perform_create(self, serializer):
         UserComponents.create_user(serializer.validated_data) 
 
 class UserUpdateView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsSingleDevice]
 
     def perform_update(self, serializer):
         UserComponents.update_user(serializer.validated_data) 
@@ -43,86 +42,94 @@ class UserUpdateView(generics.UpdateAPIView):
 class UserDeleteView(generics.DestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes=[IsAuthenticated]
+    permission_classes=[IsAuthenticated, IsSingleDevice]
 
 class UserLoginView(APIView):
     def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
+        request_data =UserComponents.fetch_user_request(request)
+        if not request_data["username"] or not request_data["password"]:
+            return Response({"error": "user's credentials should be exist in request."}, status=status.HTTP_400_BAD_REQUEST)
+        if not ["device_name"] or not request_data["device_type"] or not request_data["user_agent"]:
+            return Response({"error": "request's headers must be attached."}, status=status.HTTP_400_BAD_REQUEST)
 
-        device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
-        device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
-        user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
-
-        # device_identifier = f"{username}-{device_name}-{device_type}-{user_agent}"
-        device_identifier = f"{device_name}-{device_type}-{user_agent}"
-
-        user = UserComponents.authenticate_user(username=username, password=password)
+        user = UserComponents.authenticate_user(username=request_data["username"], password=request_data["password"])
         if user:
-            existing_device = UserDevice.objects.filter(user=user, device_token=device_identifier).first()
- 
-            if existing_device and existing_device.is_active:
-                return Response({"error": "This device is already registered and active."}, status=status.HTTP_400_BAD_REQUEST)
-
-            refresh = RefreshToken.for_user(user)
+            refresh = UserComponents.sign_user(user,request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+            if not refresh : 
+                return Response({"error": "user signing has an error, and token not valid."}, status=status.HTTP_400_BAD_REQUEST)
             access_token = str(refresh.access_token)
-            UserComponents.register_device(user, device_name, device_type, device_identifier)
 
-            user.is_logedin =True
-            user.save()
             return Response({
                 'message': 'Login successful!',
                 'access_token': access_token,
                 'refresh_token': str(refresh)
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+
 class UserLogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSingleDevice]
 
     def post(self, request):
         try:
-            user = request.user
-            username = request.data.get('username')
-            device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
-            device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
-            user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
-        
-            # device_identifier = f"{username}-{device_name}-{device_type}-{user_agent}"
-           
+            request_data =UserComponents.fetch_user_request(request)
+            if not request_data["device_name"] or not request_data["device_type"] or not request_data["user_agent"]:
+               return Response({"error": "request's headers must be attached."}, status=status.HTTP_400_BAD_REQUEST)
 
-            device_identifier = f"{device_name}-{device_type}-{user_agent}"
-         
+            user_id = UserComponents.extract_user_id_from_auth_header(request_data["auth_header"])
+            if not user_id:
+                return Response({"error":"user token notfound."})
+            
+            token = UserComponents.extract_token(request_data["auth_header"])
+            if not token:
+                return Response({"error":"user token not found."})
+            
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                raise ValidationError("User not found!")
 
-            if device_identifier is not None:
-              
-                UserComponents.logout_device( device_identifier)
+            device_identifier = UserDeviceComponents.generate_device_id(user_id, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+            if device_identifier is  None:
+                return Response({"error":"there are missing headers attrs"})
+    
+            UserDeviceComponents.logout_device_basedon_token(device_identifier)
             UserComponents.logout_user(user)
-
-            auth_header = request.headers.get("Authorization") 
-            if not auth_header or not auth_header.startswith("Bearer "):
-                 return JsonResponse({"error": "Invalid or missing token"}, status=400)
-           
-            token_str = auth_header.split(" ")[1]
-
-            if token_str:
-                token = RefreshToken(token_str)
-                token.blacklist()  
+            UserComponents.logout_token(token)
             logout(request) 
             
             return Response({"message": "Logout successful!"}, status=200)
+            return redirect("https://127.0.0.1/login")
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
    
 class UserLogoutAllView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsSingleDevice]
 
     def post(self, request):
         try:
-            user = request.user
-            user.user_id=UserComponents.extract_user_id_from_token(request)
-            UserComponents.logout_all_devices(user)  
+            request_data =UserComponents.fetch_user_request(request)
+            token = UserComponents.extract_token(request_data["auth_header"])
+            if not token:
+                return Response({"error":"user token not found."})
+            
+            user_id = UserComponents.extract_user_id_from_auth_header(request_data["auth_header"])
+            if not user_id:
+                return Response({"error":"user not found - token invalid."})
+            
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                raise ValidationError("User not found!")
+
+            UserDeviceComponents.logout_all_devices_for_user(user)  
+            UserComponents.logout_user(user)
+            UserComponents.logout_token(token)
+            logout(request) 
+
             return Response({"message": "Logged out from all devices successfully!"}, status=status.HTTP_200_OK)
+            return redirect("https://127.0.0.1/login")
+
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -133,15 +140,14 @@ def authorized_view(request):
     error_description = request.GET.get('error_description', None)
 
     if error:
-        return JsonResponse({
+        return Response({
             'status': 'error',
             'error': error,
             'description': error_description
         }, status=400)
     if code:
-        return JsonResponse({'status': 'success', 'code': code})
-    return JsonResponse({'status': 'error', 'message': 'No code provided'}, status=400)
-
+        return Response({'status': 'success', 'code': code})
+    return Response({'status': 'error', 'message': 'No code provided'}, status=400)
 
 @login_required
 def dashboard(request):
