@@ -16,8 +16,8 @@ class Task(BaseModelMixin): #id, created_at, updated_at
     description = models.CharField(max_length=1000)
     completed = models.BooleanField(default=False)
     from_user= models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigner")
-    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= "assignee")
-    
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name= "tasks")
+
     def __str__(self):
         return f"{self.name} from {self.from_user} to {self.to_user}"
 

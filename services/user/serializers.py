@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, UserDevice
+from services.task.serializers import TaskSerializer
 import re
 
 class UserDeviceSerializer(serializers.ModelSerializer):
@@ -45,6 +46,7 @@ class UserDeviceSerializer(serializers.ModelSerializer):
     
 class UserSerializer(serializers.ModelSerializer):
     devices = UserDeviceSerializer(many=True, read_only=True)
+    tasks = TaskSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = [
@@ -55,7 +57,8 @@ class UserSerializer(serializers.ModelSerializer):
             'devices',
             'is_logedin',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'tasks',
             ]
         extra_kwargs = {
             'password': {'write_only': True},

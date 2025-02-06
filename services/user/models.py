@@ -39,7 +39,7 @@ class UserDevice(models.Model):
     class Meta:
         db_table = "user_devices"  
         
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="devices")
     device_name = models.CharField(max_length=255, blank= True, default="Unknown Device")
     device_type = models.CharField(max_length=100,  default="Unknown Type")  
     device_token = models.CharField(max_length=255, unique=True)  
