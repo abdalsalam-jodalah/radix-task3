@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from .models import Task
+from datetime import datetime
+from services.user.models import User
 
 import logging
 logger = logging.getLogger("serializers")
 
 class TaskSerializer(serializers.ModelSerializer):
-    assigner = serializers.CharField(source='from_user.name', read_only=True)
-    assignee = serializers.CharField(source='to_user.name', read_only=True)
-
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  
     class Meta:
         model = Task
         fields = [
@@ -17,10 +17,9 @@ class TaskSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "completed",
-            "from_user",
-            "to_user",
-            "assigner",
-            "assignee",
+            "start_date",
+            "end_date",
+            "user"
         ]
 
     def validate_name(self, value):
@@ -38,18 +37,10 @@ class TaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Completed must be a boolean value!")
         return value
     
-    def create(self, validated_data):
-        """Ensure 'from_user' is automatically assigned from the request user."""
-        request = self.context.get("request")
-        if not request or not request.user.is_authenticated:
-            raise serializers.ValidationError("User must be authenticated.")
+    def validate(self, attrs):
+        for field in ["start_date", "end_date"]:
+            if not isinstance(attrs.get(field), datetime):
+                raise serializers.ValidationError({field: "Invalid date format. Use 'YYYY-MM-DDTHH:MM:SSZ'."})
 
-        validated_data["from_user"] = request.user  
-        return super().create(validated_data)
-
-    def validate_to_user(self, value):
-        """Ensure 'to_user' is not the same as 'from_user'."""
-        request = self.context.get("request")
-        if request and request.user == value:
-            raise serializers.ValidationError("You cannot assign a task to yourself.")
-        return value
+        return super().validate(attrs)
+    

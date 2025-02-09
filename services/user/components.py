@@ -81,15 +81,21 @@ class UserComponents():
     def sign_user(user, device_name, device_type , user_agent ):# i feel it should not be extracted from UserLoginView
         device_identifier = UserDeviceComponents.generate_device_id(user.id, device_name, device_type, user_agent)
         device = UserDeviceComponents.authenticate_device(user, device_identifier)
+       
         if device.get("status") == "exist_active":
             return Response({"error": "This device is already registered and active."}, status=status.HTTP_226_IM_USED)
-
         refresh = RefreshToken.for_user(user)
+        if not refresh:
+           return Response({"error": "refresh token has problem "}, status=status.HTTP_226_IM_USED)
+
         UserDeviceComponents.logout_all_devices_for_user(user)
         UserDeviceComponents.register_device(user, device_name, device_type, device_identifier, device.get("status"))
         user.is_logedin =True
         user.save()
-        return refresh
+        return {
+            "refresh": refresh, 
+            "access_token":str(refresh.access_token)
+                }
     
 class UserDeviceComponents():
     def generate_device_id(user_id, device_name, device_type,user_agent):

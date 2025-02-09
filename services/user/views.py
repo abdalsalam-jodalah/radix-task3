@@ -54,15 +54,14 @@ class UserLoginView(APIView):
 
         user = UserComponents.authenticate_user(username=request_data["username"], password=request_data["password"])
         if user:
-            refresh = UserComponents.sign_user(user,request_data["device_name"], request_data["device_type"], request_data["user_agent"])
-            if not refresh : 
-                return Response({"error": "user signing has an error, and token not valid."}, status=status.HTTP_400_BAD_REQUEST)
-            access_token = str(refresh.access_token)
+            data= UserComponents.sign_user(user,request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+            if not data or "refresh" not in data or "access_token" not in data:
+                return Response({"error": "User signing has an error, and token is not valid."}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
                 'message': 'Login successful!',
-                'access_token': access_token,
-                'refresh_token': str(refresh)
+                'access_token': data["access_token"],
+                'refresh_token': str(data["refresh"])
             })   
         return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
 
