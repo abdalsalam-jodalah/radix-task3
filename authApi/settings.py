@@ -1,4 +1,9 @@
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from datetime import timedelta
 from pathlib import Path
 import pymysql
@@ -7,11 +12,9 @@ pymysql.install_as_MySQLdb()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-lb*z8ca18#1a14dqacollu-q&rhsj-54_=67m@*7pbnly9r3qw"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-SECRET_KEY = "django-insecure-$sj&*m3(8xsk)=_3p3dg(@+l77k09f+pfkn9r34!+_y&t5u$9^"
-
-DEBUG = True
+DEBUG = os.getenv("DEBUG") == "True"
 
 SITE_ID = 1
 
@@ -57,8 +60,8 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
 )
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "991449275840-4h0hnlitc12de8l7g0gve0c852rms4ki.apps.googleusercontent.com"
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile' ,
@@ -100,6 +103,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'rest_framework.authtoken',
     'rest_framework_simplejwt.token_blacklist', 
+     'drf_yasg',
     # 'oauth2_provider',
 ]
 
@@ -142,18 +146,16 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DB2', 
-        'USER': 'root', 
-        'PASSWORD': '123456789', 
-        'HOST': 'localhost',  
-        'PORT': '3306',  
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
     }
 }
-
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
