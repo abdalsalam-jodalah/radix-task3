@@ -27,10 +27,11 @@ class Task(BaseModelMixin): #id, created_at, updated_at
         return f"{self.name} from {self.from_user} to {self.to_user}"
 
     def save(self, *args, **kwargs):
+        self.validate_task_dates() # i feel like i should keep clean method and call validate_task_dates inside it since it validation related 
         self.clean()  
         super().save(*args, **kwargs)
-      
-    def clean(self):
+    
+    def validate_task_dates(self):   
         if self.start_date >= self.end_date:
             raise ValidationError("Start date should be before end date.")
         
@@ -40,15 +41,7 @@ class Task(BaseModelMixin): #id, created_at, updated_at
         ).exclude(id=self.id) 
         # try:
         for task in user_tasks:
-            if (self.end_date < task.end_date and self.start_date > task.start_date):
-                raise ValidationError("Time conflict1: This task conflicts with another task.")
-            elif(self.start_date >task.start_date and self.start_date < task.end_date):
-                raise ValidationError("Time conflict2: This task conflicts with another task.")
-            elif(self.end_date < task.end_date and self.end_date < task.start_date):
-                raise ValidationError("Time conflict3: This task conflicts with another task.")
-            elif (self.end_date == task.end_date and self.start_date == task.start_date):
-                raise ValidationError("Time conflict4: This task conflicts with another task.")
+            if not (self.end_date <= task.start_date or self.start_date >= task.end_date):
+                raise ValidationError("Time conflict: This task conflicts with another task.")
         # except: 
         #     return Response ({"err":" Time conflict "})
-
-        return super().clean()

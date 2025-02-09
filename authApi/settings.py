@@ -1,7 +1,6 @@
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 from datetime import timedelta
@@ -204,8 +203,8 @@ SOCIALACCOUNT_PROVIDERS = {
 # SOCIALACCOUNT_PROVIDERS = {
 #     'google': {
 #         'APP': {
-#             'client_id': '991449275840-4h0hnlitc12de8l7g0gve0c852rms4ki.apps.googleusercontent.com',
-#             'secret': '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',
+#             'client_id': SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+#             'secret': SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET,
 #             'key': ''
 #         },
 #         'SCOPE': ['profile', 'email'], 
