@@ -11,10 +11,13 @@ from .permissions import IsSingleDevice
 from .serializers import UserSerializer
 from .models import User
 from .components import UserComponents, UserDeviceComponents
+from authApi.pagination import CustomPagination
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
     permission_classes=[IsAuthenticated,IsSingleDevice]
+    pagination_class = CustomPagination # /api/tasks/?page=2&page_size=5
+
     def get_queryset(self):
         return UserComponents.get_all_users()
     

@@ -8,7 +8,7 @@ from drf_yasg import openapi
 # Define your API documentation schema
 schema_view = get_schema_view(
     openapi.Info(
-        title="Your API Title",
+        title="Task Manager api",
         default_version='v1',
         description="Your API description",
         terms_of_service="https://www.google.com/policies/terms/",

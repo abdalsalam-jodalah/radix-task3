@@ -9,7 +9,8 @@ from .serializers import TaskSerializer
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from .models import Task
-
+from services.user.permissions import IsSingleDevice
+from authApi.pagination import CustomPagination
 import logging
 auth_logger = logging.getLogger("auth")
 logger = logging.getLogger("views")
@@ -27,28 +28,30 @@ logger = logging.getLogger("views")
 class TaskListView(generics.ListAPIView):
     """ Admin sees all tasks, user sees only their tasks """
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]
+    pagination_class = CustomPagination # /api/tasks/?page=2&page_size=5
 
     def get_queryset(self):
         user = self.request.user
         if user.role == "admin":
             return Task.objects.all()
-        return Task.objects.filter(to_user=user)
+        return Task.objects.filter(user=user)
 
 class TaskDetailView(generics.RetrieveAPIView):
     """ Admin sees all tasks, user sees only their tasks """
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]  
+    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]  
     queryset = Task.objects.all()
  
     def get_queryset(self):
         user = self.request.user
         if user.role == "admin":
             return Task.objects.all()
-        return Task.objects.filter(to_user=user)
+        return Task.objects.filter(user=user)
 
 
 class TaskCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]  
     def post(self, request, *args, **kwargs):
         try:
             serializer = TaskSerializer(data=request.data)
@@ -64,5 +67,5 @@ class TaskCreateView(APIView):
 class TaskUpdateView(generics.UpdateAPIView):
     """ Admin can update any task, user can update only their assigned tasks """
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]  
+    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]  
     queryset = Task.objects.all()
