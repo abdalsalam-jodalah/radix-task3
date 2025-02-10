@@ -1,5 +1,5 @@
 import hashlib
-from .models import User, UserDevice
+from ..models.user_models import User, UserDevice
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password  
 from django.utils.timezone import now

@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-from .models import UserDevice  
-from .components import UserComponents,UserDeviceComponents
+from ..models.user_models import UserDevice  
+from ..components.user_components import UserComponents,UserDeviceComponents
 from rest_framework.response import Response
 
 class IsSingleDevice(BasePermission):

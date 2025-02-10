@@ -4,12 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-from .models import Task
-from .serializers import TaskSerializer
+from ..models.task_models import Task
+from ..serializers.task_serializers import TaskSerializer
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from .models import Task
-from services.user.permissions import IsSingleDevice
+from ..models.task_models import Task
+from task_manager_app.permissions.user_permissions import IsSingleDevice
 from authApi.pagination import CustomPagination
 import logging
 auth_logger = logging.getLogger("auth")

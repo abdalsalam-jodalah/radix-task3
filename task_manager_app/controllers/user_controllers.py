@@ -7,10 +7,10 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.contrib.auth import logout
 from django.shortcuts import redirect
-from .permissions import IsSingleDevice
-from .serializers import UserSerializer
-from .models import User
-from .components import UserComponents, UserDeviceComponents
+from ..permissions.user_permissions import IsSingleDevice
+from ..serializers.user_serializers import UserSerializer
+from ..models.user_models import User
+from ..components.user_components import UserComponents, UserDeviceComponents
 from authApi.pagination import CustomPagination
 
 class UserListView(generics.ListAPIView):

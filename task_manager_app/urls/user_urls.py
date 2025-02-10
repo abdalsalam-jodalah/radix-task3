@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import   *
+from ..controllers.user_controllers import   *
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 # from oauth2_provider.views import TokenView, RevokeTokenView
 # from oauth2_provider.views import TokenView, AuthorizationView

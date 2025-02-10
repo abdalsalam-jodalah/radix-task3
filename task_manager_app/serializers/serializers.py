@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import User, UserDevice
-from services.task.serializers import TaskSerializer
+from ..models.user_models import User, UserDevice
+from task_manager_app.serializers.task_serializers import TaskSerializer
 import re
 
 class UserDeviceSerializer(serializers.ModelSerializer):

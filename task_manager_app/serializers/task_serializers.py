@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from .models import Task
+from ..models.task_models import Task
 from datetime import datetime
-from services.user.models import User
+from task_manager_app.models.user_models import User
 
 import logging
 logger = logging.getLogger("serializers")

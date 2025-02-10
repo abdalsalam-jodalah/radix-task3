@@ -1,6 +1,6 @@
 from django.db import models
-from authApi.mixins import BaseModelMixin
-from services.user.models import User 
+from task_manager_app.mixins.mixins import BaseModelMixin
+from task_manager_app.models.user_models import User 
 from django.core.exceptions import ValidationError
 from datetime import timezone, datetime
 from rest_framework.response import Response
