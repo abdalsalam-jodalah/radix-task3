@@ -1,22 +1,28 @@
 
 from django.contrib import admin
 from django.urls import path, include
-from django.urls import path, include
-# from oauth2_provider.views import AuthorizationView
-from services.user.views import *  
-from django.contrib.auth.views import LogoutView
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
+# Define your API documentation schema
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Task Manager api",
+        default_version='v1',
+        description="Your API description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="your_email@example.com"),
+        license=openapi.License(name="License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),  # Change as needed
+)
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # OAuth with local app urls, i just comment it becouse i removed oauth2_provider library during testing google log in 
-
-    # path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
-    # path('o/authorize', AuthorizationView.as_view(), name='authorize') ,
-    # path('o/authorized/', authorized_view, name='authorized'),
-    # path("", include('services.user.urls') ),
-    path('accounts/', include('allauth.urls')),
-    path('dashboard/', dashboard2, name='dashboard'),
-    path('logout/', custom_logout, name='logout'),  # Logout endpoint
+    path("", include('services.user.urls') ),
+    path("", include('services.task.urls') ),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
 ]
-# http://127.0.0.1:8000/o/authorize/?response_type=code&client_id=4ol8h1JHC5O0yGodqmbjyBAnOkZrYHCbsnkJYIqp&redirect_uri=http://127.0.0.1:8000/o/authorized/&scope=read write&code_challenge=<code_challenge>&code_challenge_method=S256

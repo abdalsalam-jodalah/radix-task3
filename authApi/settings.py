@@ -1,24 +1,28 @@
 
-from datetime import timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
+
+from datetime import timedelta
 from pathlib import Path
 import pymysql
+import os
 pymysql.install_as_MySQLdb()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-lb*z8ca18#1a14dqacollu-q&rhsj-54_=67m@*7pbnly9r3qw"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$sj&*m3(8xsk)=_3p3dg(@+l77k09f+pfkn9r34!+_y&t5u$9^"
+DEBUG = os.getenv("DEBUG") == "True"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 SITE_ID = 1
+
 ROOT_URLCONF = "authApi.urls"
+
 WSGI_APPLICATION = "authApi.wsgi.application"
+
 STATIC_URL = "static/"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LANGUAGE_CODE = "en-us"
@@ -30,11 +34,42 @@ USE_I18N = True
 USE_TZ = True
 
 ALLOWED_HOSTS = ['*']
+# ---------------------------------------------------------
+# Auth constants 
+AUTH_USER_MODEL = 'user.User'
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SITE_ID = 1
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USERNAME_REQUIRED = False
+LOGIN_REDIRECT_URL = '/dashboard/'  
+SOCIALACCOUNT_ADAPTER = "services.user.adapter.CustomSocialAccountAdapter"
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile' ,
+]
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # Add custom template directories here if needed
+        'DIRS': [], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -46,8 +81,8 @@ TEMPLATES = [
         },
     },
 ]
-# Application definition
 
+# Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -59,36 +94,30 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'services.user',
+    'services.task',
     'social_django',
-    # 'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt.token_blacklist', 
+     'drf_yasg',
     # 'oauth2_provider',
-    # 'social_django',
-    # 'dj_rest_auth',
-    # 'allauth',
-    # 'allauth.account',
-    # 'allauth.socialaccount',
-    # 'allauth.socialaccount.providers.google',
-    # 'rest_framework.authtoken', 
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.TokenAuthentication',
-
+        #'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     ),
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    #     # 'rest_framework_simplejwt.authentication.JWTAuthentication',
-    #     'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-    # ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  
+        #'rest_framework.permissions.IsAuthenticated',  
     ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10 
 }
 
 MIDDLEWARE = [
@@ -99,14 +128,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # 'allauth.account.middleware.AccountMiddleware',  # Add this line
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'authApi.middleware.RequestLoggingMiddleware',
 ]
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -122,52 +147,47 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'DB2', 
-        'USER': 'root', 
-        'PASSWORD': '123456789', 
-        'HOST': 'localhost',  
-        'PORT': '3306',  
-        # 'OPTIONS': {
-        #     'auth_plugin': 'mysql_native_password',  # Use a compatible auth plugin
-        # },
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
+        'PORT': os.getenv('DATABASE_PORT'),
     }
 }
-
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'AUTH_HEADER_TYPES': ('Bearer',),
     'SIGNING_KEY': SECRET_KEY,
+    'BLACKLIST_AFTER_ROTATION': True,
+     "TOKEN_BLACKLIST_ENABLED":True,
 }
 
-AUTH_USER_MODEL = 'user.User'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+    'social_core.backends.google.GoogleOAuth2',
 
-# SOCIALACCOUNT_PROVIDERS = {
-#     'google': {
-#         'APP': {
-#             'client_id': '991449275840-4h0hnlitc12de8l7g0gve0c852rms4ki.apps.googleusercontent.com',
-#             'secret': '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',
-#             'key': ''
-#         },
-#         'SCOPE': ['profile', 'email'], 
-#         'AUTH_PARAMS': {
-#             'access_type': 'offline',
-#         },
-#     }
-# }
+]
 
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "optional"
-SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'OAUTH_PKCE_ENABLED': True,
+    }
+}
 
 # OAUTH2_PROVIDER = {
 #     'ACCESS_TOKEN_EXPIRE_SECONDS': 3600,
@@ -182,59 +202,74 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 #     'django.contrib.auth.backends.ModelBackend',
 #     'oauth2_provider.backends.OAuth2Backend',
 # ]
-AUTH_USER_MODEL = 'user.User'
+# SOCIALACCOUNT_PROVIDERS = {
+#     'google': {
+#         'APP': {
+#             'client_id': SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+#             'secret': SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET,
+#             'key': ''
+#         },
+#         'SCOPE': ['profile', 'email'], 
+#         'AUTH_PARAMS': {
+#             'access_type': 'offline',
+#         },
+#     }
+# }
 
-AUTHENTICATION_BACKENDS = [
-    # Needed to login by username in Django admin, regardless of `allauth`
-    'django.contrib.auth.backends.ModelBackend',
 
-    # `allauth` specific authentication methods, such as login by email
-    'allauth.account.auth_backends.AuthenticationBackend',
-        'social_core.backends.google.GoogleOAuth2',
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
 
-]
-
-
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': [
-            'profile',
-            'email',
-        ],
-        'AUTH_PARAMS': {
-            'access_type': 'online',
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "detailed": {
+            "format": "{asctime} [{levelname}] {name} - {message}",
+            "style": "{",
         },
-        'OAUTH_PKCE_ENABLED': True,
-    }
+    },
+    "root": {
+        "handlers": ["server"],
+        "level": "DEBUG",  # Change to DEBUG to capture all logs
+    },      
+    "handlers": {
+        "views": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "views.log"),
+            "formatter": "detailed",
+        },
+        "serializers": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "serializers.log"),
+            "formatter": "detailed",
+        },
+        "models": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "models.log"),
+            "formatter": "detailed",
+        },
+        "requests": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "requests.log"),
+            "formatter": "detailed",
+        },
+        "server": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "server.log"),
+            "formatter": "detailed",
+        },
+    },
+   "loggers": {
+        "views": {"handlers": ["views"], "level": "DEBUG", "propagate": True},
+        "serializers": {"handlers": ["serializers"], "level": "DEBUG", "propagate": True},
+        "models": {"handlers": ["models"], "level": "DEBUG", "propagate": True},
+        "requests": {"handlers": ["requests"], "level": "INFO", "propagate": True},
+        "django": {"handlers": ["server"], "level": "INFO", "propagate": True},
+},
 }
-SITE_ID = 1
-ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_USERNAME_REQUIRED = False
-
-
-# ACCOUNT_ADAPTER = "services.user.adapter"
-LOGIN_REDIRECT_URL = '/dashboard/'  
-SOCIALACCOUNT_ADAPTER = "services.user.adapter.CustomSocialAccountAdapter"
-
-SOCIAL_AUTH_PIPELINE = (
-    'social_core.pipeline.social_auth.social_details',
-    'social_core.pipeline.social_auth.social_uid',
-    'social_core.pipeline.social_auth.auth_allowed',
-    'social_core.pipeline.social_auth.social_user',
-    'social_core.pipeline.user.get_username',
-    'social_core.pipeline.user.create_user',
-    'social_core.pipeline.social_auth.associate_user',
-    'social_core.pipeline.social_auth.load_extra_data',
-    'social_core.pipeline.user.user_details',
-)
-
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = "991449275840-4h0hnlitc12de8l7g0gve0c852rms4ki.apps.googleusercontent.com"
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "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"
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile' ,
-]

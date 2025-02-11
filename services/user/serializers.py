@@ -1,8 +1,52 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, UserDevice
+from services.task.serializers import TaskSerializer
 import re
 
+class UserDeviceSerializer(serializers.ModelSerializer):
+    user_id = serializers.CharField(source = 'user.id', read_only=True)
+    class Meta:
+        model =UserDevice
+        fields = [
+            "user_id",
+            "device_name",
+            "device_type",
+            "device_token",
+            "login_time",
+            "logout_time",
+            "is_active",
+        ]
+
+    def validate_device_name(self, value):
+        if not value or len(value.strip()) < 3:
+            raise serializers.ValidationError("Device name must be at least 3 characters long!")
+        return value
+
+    # def validate_device_type(self, value):
+    #     valid_types = ["mobile", "tablet", "laptop", "desktop"]
+    #     if value.lower() not in valid_types:
+    #         raise serializers.ValidationError(f"Device type must be one of {valid_types}!")
+    #     return value
+
+    def validate_device_token(self, value):
+        if not value or len(value) < 20:
+            raise serializers.ValidationError("Device token must be at least 20 characters long1")
+        return value
+    
+    def validate_is_active(self, value):
+        if value not in [True, False ]:
+            raise serializers.ValidationError("Is active must be Boolean value!")
+ 
+    def validate(self, attrs):
+        login_time = attrs.get("login_time")
+        logout_time = attrs.get("logout_time")
+        if logout_time and login_time and logout_time <= login_time:
+            raise serializers.ValidationError("Logout time must be later than login time!")
+        return attrs
+    
 class UserSerializer(serializers.ModelSerializer):
+    devices = UserDeviceSerializer(many=True, read_only=True)
+    tasks = TaskSerializer(many=True, read_only=True)
     class Meta:
         model = User
         fields = [
@@ -10,9 +54,17 @@ class UserSerializer(serializers.ModelSerializer):
             'role', 
             'username', 
             'password',
+            'devices',
+            'is_logedin',
+            'created_at',
+            'updated_at',
+            'tasks',
             ]
         extra_kwargs = {
             'password': {'write_only': True},
+            'is_logedin': {'read_only': True},
+            'updated_at' :{'read_only': True},
+            'created_at' :{'read_only': True}
             }  
 
 
