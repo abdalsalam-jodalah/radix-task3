@@ -21,7 +21,9 @@ class TaskSerializer(serializers.ModelSerializer):
             "end_date",
             "user"
         ]
-
+    logger.debug("Debug message")
+    logger.info("Info message")
+    logger.warning("Warning message")
     def validate_name(self, value):
         if not value or len(value.strip()) < 3:
             raise serializers.ValidationError("Task Name must be at least 3 characters long!")

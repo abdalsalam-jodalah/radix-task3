@@ -1,22 +1,20 @@
 from django.urls import path, include
-from ..controllers.user_controllers import   *
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from ..controllers.user_controllers import   UserApi
+from ..controllers.auth_controllers import   AuthApi, dashboard, custom_logout
+
 # from oauth2_provider.views import TokenView, RevokeTokenView
 # from oauth2_provider.views import TokenView, AuthorizationView
 # from oauth2_provider.views import AuthorizationView
 
 urlpatterns = [
-    path('signup/', UserCreateView.as_view(), name='signup'),  
-    path('login/', UserLoginView.as_view(), name='login'),  
-    path('logout/', UserLogoutView.as_view(), name='logout'),  
-    path('logout/all', UserLogoutAllView.as_view(), name='logout_all_devices'),  
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/',           AuthApi.as_view(), name='login_logout'),  
 
-    path('users/', UserListView.as_view(), name='list_users'), 
-    path('users/<int:id>/', UserDetailView.as_view(), name='get_user'), 
-    path('users/edit/<int:id>/', UserUpdateView.as_view(), name='edit_user'),  
-    path('users/delete/<int:id>/', UserDeleteView.as_view(), name='delete_user'), 
-
+    path('users/',          UserApi.as_view(), name='users_crud'  ), 
+    path('users/<int:id>/', UserApi.as_view(), name='user_id_crud'), 
+   
     path('accounts/', include('allauth.urls')),
     path('dashboard/', dashboard, name='dashboard'),
     path('oauth/logout/', custom_logout, name='logout'),  # Logout endpoint

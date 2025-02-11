@@ -97,6 +97,20 @@ class UserComponents():
             "access_token":str(refresh.access_token)
                 }
     
+    def get_user(request):
+        request_data= UserComponents.fetch_user_request(request)
+        if not request_data["auth_header"]: 
+            return Response({"error": "Missing required headers."}, status=status.HTTP_400_BAD_REQUEST)
+        user_id = UserComponents.extract_user_id_from_auth_header(request_data["auth_header"])
+        if not user_id:
+            return Response({"error": "Token not valid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.get(id=user_id)
+        if not user:
+            return Response({"error": "Token not valid or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+        return user 
+
+    
 class UserDeviceComponents():
     def generate_device_id(user_id, device_name, device_type,user_agent):
         raw_data = f"{user_id}-{device_name}-{device_type}-{user_agent}"
