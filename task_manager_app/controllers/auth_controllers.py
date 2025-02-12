@@ -16,12 +16,19 @@ logger = logging.getLogger("views")
 
 class AuthApi(APIView):
     def get_permissions(self):
-        """Return the permissions for the current request."""
         if self.request.method == 'POST':
             return [] 
         return [IsAuthenticated(), IsSingleDevice()]
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.method.lower() == "post":
+            if "logout" in request.path:
+                return self.log_out(request, *args, **kwargs)
+            return self.sign_in(request, *args, **kwargs)  
+        return super().dispatch(request, *args, **kwargs)
 
-    def post(self, request):
+
+    def sign_in(self, request):
         """Handles user login."""
         request_data = AuthComponents.fetch_user_request(request)
         required_fields = ["username", "password", "device_name", "device_type", "user_agent"]
@@ -56,7 +63,7 @@ class AuthApi(APIView):
             'refresh_token': str(data["refresh"])
         }, status=status.HTTP_200_OK)
 
-    def delete(self, request):
+    def logout(self, request):
         """Handles user logout from a single device."""
         try:
             request_data = AuthComponents.fetch_user_request(request)
