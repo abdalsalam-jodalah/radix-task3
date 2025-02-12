@@ -1,28 +1,27 @@
 from django.core.exceptions import ValidationError
 from ..models.user_models import User
+from ..repositories.user_repository import UserRepository
 
 class UserComponents():
     def get_all_users():
-        return User.objects.all()
+        return UserRepository.fetch_all_users()
 
     def get_user_by_id(user_id):
         try:
-            return User.objects.get(id=user_id)
+            return UserRepository.fetch_user_by_id(user_id)
         except User.DoesNotExist:
             raise ValidationError("User not found!")
         
     def get_user_by_username(username):
         try:
-            return User.objects.get(username=username)
+            return UserRepository.fetch_user_by_username
         except User.DoesNotExist:
             raise ValidationError("User not found!")
 
     def create_user(user_data):
-        user = User(**user_data)
-        user.save()
+        UserRepository.create_user(user_data)
+        
 
     def update_user(user_data):
         user = UserComponents.get_user_by_id(user_data['id'])
-        for field, value in user_data.items():
-            setattr(user, field, value)
-        user.save()
+        UserRepository.update_user(user, user_data)

@@ -1,7 +1,7 @@
 import hashlib
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
-
+from ..repositories.user_device_repository import UserDeviceRepository
 from ..models.user_device_mdoels import UserDevice
 
 
@@ -12,8 +12,8 @@ class UserDeviceComponents():
         # return hashlib.sha256(raw_data.encode()).hexdigest()
 
     def authenticate_device(user, device_token ):
-        existing_device = UserDevice.objects.filter(user=user, device_token=device_token).first()
-
+        existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
+      
         if existing_device and existing_device.is_active:
             return {"status": "exist_active"}
         if existing_device and not existing_device.is_active:
@@ -22,31 +22,21 @@ class UserDeviceComponents():
         
     def register_device(user, device_name, device_type, device_token,status):
         if status == "exist_not_active" :
-            existing_device = UserDevice.objects.filter(user=user, device_token=device_token).first()
-            existing_device.is_active = True
-            existing_device.login_time = now()
-            existing_device.logout_time = None
-            existing_device.save()
+            existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
+            UserDeviceRepository.activate_device(existing_device, now(), True, None)
         elif status == "not_exist" :
-            UserDevice.objects.create(
-                user=user,
-                device_name=device_name or "Unknown Device",
-                device_type=device_type or "Unknown Type",
-                device_token=device_token,
-                is_active=True,
-                login_time=now(),
-                logout_time=None
-            )
+            UserDeviceRepository.create_device(user,device_name,device_type,device_token,True,now(),None)
+            
     def logout_device_basedon_token(device_identifier):
         try:
-            device = UserDevice.objects.get(device_token=device_identifier.lower())
+            device = UserDeviceRepository.fetch_Device_by_token(device_token=device_identifier.lower())
             UserDeviceComponents.logout_device(device)
         except UserDevice.DoesNotExist:
             raise ValidationError("Device not found or already logged out.")
          
     def logout_all_devices_for_user(user):
         try:
-            devices = UserDevice.objects.filter(user_id=user.id)
+            devices = UserDeviceRepository.fetch_Device_by_token(user.id)
             for device in devices:
                 UserDeviceComponents.logout_device(device)
         except UserDevice.DoesNotExist:
