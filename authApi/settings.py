@@ -94,8 +94,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'task_manager_app',
-    # 'task_manager_app.user',
-    # 'task_manager_app.task',
+
     'social_django',
     'allauth',
     'allauth.account',
@@ -158,6 +157,8 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT'),
     }
 }
+DATABASE_ROUTERS = ['database_router.MyDatabaseRouter']
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),

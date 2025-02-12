@@ -1,7 +1,9 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-from ..models.user_models import UserDevice  
-from ..components.user_components import UserComponents,UserDeviceComponents
+from ..models.user_device_mdoels import UserDevice  
+from ..components.auth_comopnents import AuthComponents
+from ..components.user_device_components import UserDeviceComponents
+
 from rest_framework.response import Response
 
 class IsSingleDevice(BasePermission):
@@ -10,8 +12,7 @@ class IsSingleDevice(BasePermission):
     """
 
     def has_permission(self, request, view):
-        auth_header = request.headers.get("Authorization") 
-        user_id = UserComponents.extract_user_id_from_auth_header(auth_header)
+        user_id = AuthComponents.extract_user_id_from_request(request)
         if not user_id:
             raise PermissionDenied({"error": "user id not founded in header."})
         

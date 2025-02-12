@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from ..models.task_models import Task
-from datetime import datetime
-from task_manager_app.models.user_models import User
+from ..models.user_models import User
 
 import logging
 logger = logging.getLogger("serializers")
 
 class TaskSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
     class Meta:
         model = Task
         fields = [
@@ -21,28 +21,22 @@ class TaskSerializer(serializers.ModelSerializer):
             "end_date",
             "user"
         ]
-    logger.debug("Debug message")
-    logger.info("Info message")
-    logger.warning("Warning message")
+
     def validate_name(self, value):
-        if not value or len(value.strip()) < 3:
-            raise serializers.ValidationError("Task Name must be at least 3 characters long!")
+        if len(value.strip()) < 3:
+            raise serializers.ValidationError("Task name must be at least 3 characters long.")
         return value
 
     def validate_description(self, value):
         if not value.strip():
-            raise serializers.ValidationError("Description should not be empty!")
+            raise serializers.ValidationError("Description cannot be empty.")
         return value
 
-    def validate_completed(self, value):
-        if not isinstance(value, bool):
-            raise serializers.ValidationError("Completed must be a boolean value!")
-        return value
-    
     def validate(self, attrs):
-        for field in ["start_date", "end_date"]:
-            if not isinstance(attrs.get(field), datetime):
-                raise serializers.ValidationError({field: "Invalid date format. Use 'YYYY-MM-DDTHH:MM:SSZ'."})
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+
+        if start_date and end_date and start_date >= end_date:
+            raise serializers.ValidationError("Start date must be before the end date.")
 
         return super().validate(attrs)
-    
