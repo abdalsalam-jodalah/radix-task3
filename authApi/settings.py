@@ -36,7 +36,7 @@ USE_TZ = True
 ALLOWED_HOSTS = ['*']
 # ---------------------------------------------------------
 # Auth constants 
-AUTH_USER_MODEL = 'user.User'
+AUTH_USER_MODEL = "task_manager_app.User"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 SOCIALACCOUNT_LOGIN_ON_GET = True
@@ -47,7 +47,7 @@ ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
 LOGIN_REDIRECT_URL = '/dashboard/'  
-SOCIALACCOUNT_ADAPTER = "services.user.adapter.CustomSocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "task_manager_app.adapter.CustomSocialAccountAdapter"
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
     'social_core.pipeline.social_auth.social_uid',
@@ -93,8 +93,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'authApi',
-    'services.user',
-    'services.task',
+    'task_manager_app',
+
     'social_django',
     'allauth',
     'allauth.account',
@@ -130,7 +130,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    'authApi.middleware.RequestLoggingMiddleware',
+    'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -157,6 +157,8 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT'),
     }
 }
+DATABASE_ROUTERS = ['database_router.MyDatabaseRouter']
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
