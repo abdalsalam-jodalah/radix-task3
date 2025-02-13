@@ -17,6 +17,7 @@ class TaskApi(APIView):
 
     def get(self, request, pk=None):
         user = AC.get_user(request)
+        
         if not user:
             return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -55,3 +56,26 @@ class TaskApi(APIView):
 
         response_data, response_status = TaskComponents.delete_task(user, pk)
         return Response(response_data, status=response_status)
+    
+    def patch(self, request, pk=None):
+        user = AC.get_user(request)
+        if not user:
+            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        response_data, response_status = TaskComponents.partial_update_task(user, pk,request.data)
+        return Response(response_data, status=response_status)
+
+class ByUser(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]
+    pagination_class = CustomPagination
+
+    def get(self, request):
+        user = AC.get_user(request)
+        if not user:
+            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        tasks = TaskComponents.get_tasks_assigned_by_user(user)  
+        paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
+        serializer = TaskSerializer(paginated_tasks, many=True)
+
+        return self.pagination_class().get_paginated_response(serializer.data)

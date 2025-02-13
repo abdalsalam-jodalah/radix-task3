@@ -17,6 +17,8 @@ class UserApi(APIView):
     """
     Handles CRUD operations for User.
     """
+    pagination_class = CustomPagination
+
     def get_permissions(self):
         """Return the permissions for the current request."""
         if self.request.method == 'POST':

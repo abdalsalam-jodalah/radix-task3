@@ -44,3 +44,13 @@ class TaskComponents:
 
         TaskRepository.delete_task(task)
         return {"detail": "Task deleted successfully"}, 204
+    
+    def partial_update_task(user, pk, data):
+        pass
+    
+    def get_tasks_assigned_by_user(user):
+        tasks = TaskRepository.get_tasks_by_user(user).order_by('-created_at')
+        if not tasks:
+            return {"detail": "Tasks not found for this user"}, 404
+        return tasks
+    

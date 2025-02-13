@@ -30,38 +30,50 @@ class AuthApi(APIView):
 
     def sign_in(self, request):
         """Handles user login."""
-        request_data = AuthComponents.fetch_user_request(request)
-        required_fields = ["username", "password", "device_name", "device_type", "user_agent"]
+        try:
+            request_data = AuthComponents.fetch_user_request(request)
+            required_fields = ["username", "password", "device_name", "device_type", "user_agent"]
 
-        if not all(request_data.get(field) for field in required_fields):
-            logger.warning(SharedComponents.get_log_message(
-                "AuthApi", "POST", request.user, additional_info="Missing required fields"
+            if not all(request_data.get(field) for field in required_fields):
+                logger.warning(SharedComponents.get_log_message(
+                    "AuthApi", "POST", request.user, additional_info="Missing required fields"
+                ))
+                return Response({"error": "Missing required fields in request."}, status=status.HTTP_400_BAD_REQUEST)
+
+            user = AuthComponents.authenticate_user(username=request_data["username"], password=request_data["password"])
+            if not user:
+                logger.warning(SharedComponents.get_log_message(
+                    "AuthApi", "POST", request.user, additional_info="Invalid login attempt"
+                ))
+                return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+
+            data = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+            if not data or "refresh" not in data or "access_token" not in data:
+                logger.error(SharedComponents.get_log_message(
+                    "AuthApi", "POST", user, additional_info="Token generation failed"
+                ))
+                return Response({"error": "Error signing user, invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+
+            logger.info(SharedComponents.get_log_message(
+                "AuthApi", "POST", user, additional_info="User logged in successfully"
             ))
-            return Response({"error": "Missing required fields in request."}, status=status.HTTP_400_BAD_REQUEST)
 
-        user = AuthComponents.authenticate_user(username=request_data["username"], password=request_data["password"])
-        if not user:
-            logger.warning(SharedComponents.get_log_message(
-                "AuthApi", "POST", request.user, additional_info="Invalid login attempt"
-            ))
-            return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
-
-        data = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
-        if not data or "refresh" not in data or "access_token" not in data:
+            return Response({
+                'message': 'Login successful!',
+                'access_token': data["access_token"],
+                'refresh_token': str(data["refresh"])
+            }, status=status.HTTP_200_OK)
+        
+        except AttributeError as err:
             logger.error(SharedComponents.get_log_message(
-                "AuthApi", "POST", user, additional_info="Token generation failed"
+                    "AuthApi", "POST", request.user, additional_info=f"Error during logout: {str(err)}"
             ))
-            return Response({"error": "Error signing user, invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response({"error": str(Exception)}, status=status.HTTP_400_BAD_REQUEST)
 
-        logger.info(SharedComponents.get_log_message(
-            "AuthApi", "POST", user, additional_info="User logged in successfully"
-        ))
 
-        return Response({
-            'message': 'Login successful!',
-            'access_token': data["access_token"],
-            'refresh_token': str(data["refresh"])
-        }, status=status.HTTP_200_OK)
+
 
     def logout(self, request):
         """Handles user logout from a single device."""

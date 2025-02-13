@@ -37,13 +37,14 @@ ALLOWED_HOSTS = ['*']
 # ---------------------------------------------------------
 # Auth constants 
 AUTH_USER_MODEL = "task_manager_app.User"
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 ACCOUNT_EMAIL_VERIFICATION = "optional"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
+# ACCOUNT_AUTHENTICATION_METHOD = "username_email"
+# ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
 LOGIN_REDIRECT_URL = '/dashboard/'  
@@ -157,7 +158,7 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT'),
     }
 }
-DATABASE_ROUTERS = ['database_router.MyDatabaseRouter']
+DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
