@@ -48,7 +48,7 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_USERNAME_REQUIRED = False
 LOGIN_REDIRECT_URL = '/dashboard/'  
-SOCIALACCOUNT_ADAPTER = "task_manager_app.adapter.CustomSocialAccountAdapter"
+# SOCIALACCOUNT_ADAPTER = "task_manager_app.adapter.CustomSocialAccountAdapter"
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
     'social_core.pipeline.social_auth.social_uid',
@@ -96,13 +96,13 @@ INSTALLED_APPS = [
     'authApi',
     'task_manager_app',
 
-    'social_django',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'rest_framework.authtoken',
-    'rest_framework_simplejwt.token_blacklist', 
+    # 'social_django',
+    # 'allauth',
+    # 'allauth.account',
+    # 'allauth.socialaccount',
+    # 'allauth.socialaccount.providers.google',
+    # 'rest_framework.authtoken',
+    # 'rest_framework_simplejwt.token_blacklist', 
      'drf_yasg',
     # 'oauth2_provider',
 ]
@@ -130,7 +130,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
+    # 'allauth.account.middleware.AccountMiddleware',
     'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
 ]
 
@@ -174,7 +174,7 @@ SIMPLE_JWT = {
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    # 'allauth.account.auth_backends.AuthenticationBackend',
     'social_core.backends.google.GoogleOAuth2',
 
 ]

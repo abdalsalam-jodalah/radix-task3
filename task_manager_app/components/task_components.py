@@ -1,3 +1,5 @@
+import datetime
+from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from ..serializers.task_serializers import TaskSerializer
 from ..repositories.task_repository import TaskRepository
@@ -54,3 +56,32 @@ class TaskComponents:
             return {"detail": "Tasks not found for this user"}, 404
         return tasks
     
+    def get_tasks_filtered(user, filters=None, search_query=None):
+        tasks = TaskRepository.get_tasks_for_user(user)
+        if not tasks:
+            return None, {"detail": "Tasks not found fro this user"}
+
+        if search_query:
+            tasks = tasks.filter(
+                Q(title__icontains=search_query) |
+                Q(description__icontains=search_query)
+            )
+
+        if filters:
+            if 'priority' in filters:
+                tasks = tasks.filter(priority=filters['priority'])
+            
+            if 'status' in filters:
+                tasks = tasks.filter(status=filters['status'])
+
+            if 'category' in filters:
+                tasks = tasks.filter(category=filters['category'])
+
+            if 'start_date' in filters and 'end_date' in filters:
+                try:
+                    start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
+                    end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
+                    tasks = tasks.filter(created_at__range=(start_date, end_date))
+                except ValueError:
+                    pass  
+        return tasks, None

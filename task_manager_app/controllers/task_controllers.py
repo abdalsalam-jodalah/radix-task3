@@ -26,8 +26,16 @@ class TaskApi(APIView):
             if task is None:
                 return Response(response_data, status=response_status)
             return Response(response_data, status=response_status)
+        
+        filters = {
+            "priority": request.GET.get("priority"),
+            "status": request.GET.get("status"),
+            "category": request.GET.get("category"),
+            "start_date": request.GET.get("start_date"),
+            "end_date": request.GET.get("end_date"),
+        }
 
-        tasks = TaskComponents.get_tasks_for_user(user)
+        tasks, response_status = TaskComponents.get_tasks_filtered(user, filters)
         paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
         serializer = TaskSerializer(paginated_tasks, many=True)
 
@@ -74,7 +82,17 @@ class ByUser(APIView):
         if not user:
             return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        tasks = TaskComponents.get_tasks_assigned_by_user(user)  
+        filters = {
+            "priority": request.GET.get("priority"),
+            "status": request.GET.get("status"),
+            "category": request.GET.get("category"),
+            "start_date": request.GET.get("start_date"),
+            "end_date": request.GET.get("end_date"),
+        }
+        search_query = request.GET.get("search", None)
+        tasks = TaskComponents.get_tasks_assigned_by_user(user, filters)
+        # tasks = TaskComponents.get_tasks_assigned_by_user(user) 
+         
         paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
         serializer = TaskSerializer(paginated_tasks, many=True)
 
