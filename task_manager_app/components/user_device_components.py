@@ -11,15 +11,23 @@ class UserDeviceComponents():
         return raw_data
         # return hashlib.sha256(raw_data.encode()).hexdigest()
 
-    def authenticate_device(user, device_token ):
-        existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
-      
-        if existing_device and existing_device.is_active:
-            return {"status": "exist_active"}
-        if existing_device and not existing_device.is_active:
-            return {"status": "exist_not_active"}
-        return {"status": "not_exist"}
+    def authenticate_device(user, device_token):
+        try:
+            existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
+
+            if existing_device:
+                device = existing_device 
+                if device.is_active:
+                    return {"status": "exist_active"}
+                else:
+                    return {"status": "exist_not_active"}
+            else:
+                return {"status": "not_exist"}
         
+        except Exception as err:
+            print(f"exception {err}")
+
+
     def register_device(user, device_name, device_type, device_token,status):
         if status == "exist_not_active" :
             existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
@@ -45,4 +53,7 @@ class UserDeviceComponents():
     def logout_device(device):
         device.is_active = False
         device.logout_time = now()
-        device.save()  
+        if isinstance(device, UserDevice):
+            device.save()  
+        else:
+            raise ValidationError("Device not found or already logged out.")

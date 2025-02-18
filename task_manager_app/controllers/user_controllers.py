@@ -51,9 +51,10 @@ class UserApi(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = UserComponents.create_user(serializer.validated_data)
-            logger.info(SharedComponents.get_log_message("UserApi", "POST", request.user, user.id, "User", "User created successfully"))
-            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
-
+            if user:
+                logger.info(SharedComponents.get_log_message("UserApi", "POST", request.user, user.id, "User", "User created successfully"))
+                return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+            
         logger.error(SharedComponents.get_log_message("UserApi", "POST", request.user, None, "User", f"Validation error: {serializer.errors}"))
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

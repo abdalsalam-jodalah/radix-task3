@@ -3,11 +3,13 @@ from ..models.task_models import Task
 from ..models.user_models import User
 import logging
 logger = logging.getLogger("serializers")
+from ..models.task_category_models import TaskCategory  
+
 
 class TaskSerializer(serializers.ModelSerializer):
-    assigner = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Assigner (who assigns the task)
-    assignee = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())  # Assignee (who receives the task)
-
+    assigner = serializers.PrimaryKeyRelatedField(queryset=User.objects.all()) 
+    assignee = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    category = serializers.PrimaryKeyRelatedField(queryset=TaskCategory.objects.all())
     class Meta:
         model = Task
         fields = [
@@ -16,6 +18,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "updated_at",
             "assigner",
             "assignee",
+            'category',
             "name",
             "status",
             "priority",

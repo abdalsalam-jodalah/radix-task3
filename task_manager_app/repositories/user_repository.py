@@ -7,12 +7,13 @@ class UserRepository():
     def fetch_user_by_id(user_id):
         return User.objects.get(id=user_id)
     
-    def fetch_user_by_username(username):
-       return User.objects.get(username=username)    
-    
+    def fetch_user_by_email(email):
+        user =User.objects.get(email=email)  
+        return user
     def create_user(user_data):
         user= User(**user_data)
         user.save()
+        return user
     
     def update_user(user,user_data):
         for field, value in user_data.items():

@@ -14,7 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
             "full_name",
             "role",
             "is_logedin",
-            "username",
+            "email",
             "password",
             "devices",
             "tasks",
@@ -28,7 +28,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at": {"read_only": True},
         }
 
-    def validate_username(self, value):
+    def validate_email(self, value):
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         if not re.match(email_regex, value):
             raise serializers.ValidationError("Enter a valid email address.")

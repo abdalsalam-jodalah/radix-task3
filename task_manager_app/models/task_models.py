@@ -4,9 +4,11 @@ from django.core.exceptions import ValidationError
 
 from ..mixins.mixins import BaseModelMixin
 from .user_models import User
+from .task_category_models import TaskCategory
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class Task(BaseModelMixin):  # id, created_at, updated_at
     class Meta:
@@ -29,6 +31,7 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
 
     assigner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_tasks")  
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_tasks")
+    category = models.ForeignKey(TaskCategory, on_delete=models.CASCADE, related_name="tasks")
     name = models.CharField(max_length=255, default="No name")
     status = models.CharField(max_length=11, choices=StatusChoices.choices, default=StatusChoices.NOT_STARTED)
     priority = models.CharField(max_length=11, choices=PriorityChoices.choices, default=PriorityChoices.HIGH)
@@ -36,9 +39,8 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
     end_date = models.DateTimeField(default=now)
     description = models.TextField(max_length=1000, default="No description")
 
-
     def __str__(self):
-        return f"{self.name} (Assigned to: {self.user.username})"
+        return f"{self.name} (Assigned to: {self.assignee.email})"
 
     def clean(self):
         """Validate task before saving."""
@@ -50,8 +52,7 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
             raise ValidationError("Start date must be before end date.")
 
         conflict_exists = Task.objects.filter(
-            user=self.user,
-            completed=False,
+            assigner=self.assigner,
             start_date__lt=self.end_date,  
             end_date__gt=self.start_date
         ).exclude(id=self.id).exists()
@@ -64,7 +65,7 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
         try:
             self.clean()  
             super().save(*args, **kwargs)
-            logger.info(f"Task '{self.name}' saved successfully for user {self.user.username}")
+            logger.info(f"Task '{self.name}' saved successfully for user {self.assignee.email}")
         except ValidationError as e:
             logger.error(f"Task '{self.name}' could not be saved: {e}")
             raise

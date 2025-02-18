@@ -7,6 +7,9 @@ from ..pagination import CustomPagination
 from ..components.auth_comopnents import AuthComponents as AC
 from ..components.task_components import TaskComponents
 from ..serializers.task_serializers import TaskSerializer
+from ..models.email_notification_model import EmailNotification
+from ..components.task_notification import send_task_notification
+
 import logging 
 
 logger = logging.getLogger("views")
@@ -42,13 +45,31 @@ class TaskApi(APIView):
         return self.pagination_class().get_paginated_response(serializer.data)
 
     def post(self, request):
-        user = AC.get_user(request)
-        if not user:
-            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+        try: 
+            user = AC.get_user(request)
+            if not user:
+                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+            data = TaskComponents.fetch_user_data(request)
+            task, response_status = TaskComponents._handle_create_task(user=user, data=data)
+            print(f"task----->{task}")
 
-        response_data, response_status = TaskComponents.create_task(user, request.data)
-        return Response(response_data, status=response_status)
+            if task and task.name:
+                notification = EmailNotification.objects.create(
+                    user=user,
+                    message=f"You have been assigned a new task: {task.name}",
+                    task=task
+                )
+                send_task_notification.delay(notification.id)
+            status_code = response_status.get("status") if isinstance(response_status, dict) else 400
 
+            return Response(
+                {"task": TaskSerializer(task).data} if task else {"error": "Invalid request"},
+                status=int(status_code)
+            )
+        except Exception as e:
+            logger.error(f"Error creating task: {e}")
+            return Response({f"error": "Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
+    
     def put(self, request, pk=None):
         user = AC.get_user(request)
         if not user:

@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import JSONRenderer
 
 from ..permissions.user_permissions import IsSingleDevice
 from ..components.auth_comopnents import AuthComponents
@@ -20,34 +21,39 @@ class AuthApi(APIView):
             return [] 
         return [IsAuthenticated(), IsSingleDevice()]
     
-    def dispatch(self, request, *args, **kwargs):
-        if request.method.lower() == "post":
-            if "logout" in request.path:
-                return self.log_out(request, *args, **kwargs)
-            return self.sign_in(request, *args, **kwargs)  
-        return super().dispatch(request, *args, **kwargs)
+    # def dispatch(self, request, *args, **kwargs):
+    #     if request.method.lower() == "post":
+    #         if "logout" in request.path:
+    #             return self.log_out(request, *args, **kwargs)
+    #         return self.sign_in(request, *args, **kwargs)  
+    #     return super().dispatch(request, *args, **kwargs)
 
+    renderer_classes = [JSONRenderer]
 
-    def sign_in(self, request):
+    def post(self, request):
         """Handles user login."""
         try:
             request_data = AuthComponents.fetch_user_request(request)
-            required_fields = ["username", "password", "device_name", "device_type", "user_agent"]
+            request_data.update(AuthComponents.fetch_user_data(request))
+            required_fields = ["email", "password", "device_name", "device_type", "user_agent"]
 
             if not all(request_data.get(field) for field in required_fields):
                 logger.warning(SharedComponents.get_log_message(
-                    "AuthApi", "POST", request.user, additional_info="Missing required fields"
+                    "AuthApi", "POST", None, additional_info="Missing required fields"
                 ))
                 return Response({"error": "Missing required fields in request."}, status=status.HTTP_400_BAD_REQUEST)
 
-            user = AuthComponents.authenticate_user(username=request_data["username"], password=request_data["password"])
+            user = AuthComponents.authenticate_user(email=request_data["email"], password=request_data["password"])
+         
+
             if not user:
                 logger.warning(SharedComponents.get_log_message(
-                    "AuthApi", "POST", request.user, additional_info="Invalid login attempt"
+                    "AuthApi", "POST", None, additional_info="Invalid login attempt"
                 ))
                 return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
 
             data = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+
             if not data or "refresh" not in data or "access_token" not in data:
                 logger.error(SharedComponents.get_log_message(
                     "AuthApi", "POST", user, additional_info="Token generation failed"
@@ -57,7 +63,7 @@ class AuthApi(APIView):
             logger.info(SharedComponents.get_log_message(
                 "AuthApi", "POST", user, additional_info="User logged in successfully"
             ))
-
+            
             return Response({
                 'message': 'Login successful!',
                 'access_token': data["access_token"],
@@ -66,17 +72,20 @@ class AuthApi(APIView):
         
         except AttributeError as err:
             logger.error(SharedComponents.get_log_message(
-                    "AuthApi", "POST", request.user, additional_info=f"Error during logout: {str(err)}"
+                    "AuthApi", "POST", None, additional_info=f"Error during logout: {str(err)}"
             ))
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception:
-            return Response({"error": str(Exception)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(str(e))  
+            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
 
-    def logout(self, request):
+    def put (self, request):
         """Handles user logout from a single device."""
+        logger.info("inside logout")
+
         try:
             request_data = AuthComponents.fetch_user_request(request)
             required_fields = ["device_name", "device_type", "user_agent", "auth_header"]
