@@ -9,9 +9,11 @@ def send_task_notification(notification_id):
     
     if not notification.is_sent:
         subject = "New Task Assigned"
-        message = f"{notification.message}\n\nTask Details:\nTitle: {notification.task.title}"
+        message = f"{notification.message}\n\nTask Details:\nTitle: {notification.task.name}"
         recipient_email = notification.user.email
-        
+        print(f"Sending email to {recipient_email}")
+        print(notification.task) 
+
         send_mail(
             subject,
             message,

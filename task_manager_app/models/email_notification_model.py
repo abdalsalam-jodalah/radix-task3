@@ -11,4 +11,4 @@ class EmailNotification(models.Model):
     created_at = models.DateTimeField(default=now)
 
     def __str__(self):
-        return f"Notification for {self.user.email} - {self.task.title}"
+        return f"Notification for {self.user.email} - {self.task.name}"
