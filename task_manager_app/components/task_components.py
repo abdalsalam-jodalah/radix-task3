@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import status
@@ -6,17 +6,20 @@ from rest_framework.response import Response
 from ..serializers.task_serializers import TaskSerializer
 from ..repositories.task_repository import TaskRepository
 from ..components.shared_components import SharedComponents as SC
+from ..models.task_models import Task
 import json
 
 class TaskComponents:
     def get_task_response(user, pk):
         task = TaskRepository.get_task_by_id(pk)
-        if not task:
+        if not task and not isinstance(task, Task):
             return None, {"detail": "Task not found"}, 404
-        if user.role != "admin" and task.user != user:
+        serializer = TaskSerializer(task)
+       
+        
+        if user.role != "admin" and serializer.data.get('assignee') != user.id:
             raise PermissionDenied("You can only view your own tasks.")
-
-        return task, TaskSerializer(task).data, 200
+        return task, serializer.data, 200
 
     def create_task(user, data):
         serializer = TaskSerializer(data=data)
@@ -30,7 +33,7 @@ class TaskComponents:
         if not task:
             return None, {"detail": "Task not found"}, 404
 
-        if user.role != "admin" and task.user != user:
+        if user.role != "admin" and task.assignee != user:
             raise PermissionDenied("You can only update your own tasks.")
 
         serializer = TaskSerializer(task, data=data, partial=True)
@@ -43,8 +46,7 @@ class TaskComponents:
         task = TaskRepository.get_task_by_id(pk)
         if not task:
             return {"detail": "Task not found"}, 404
-
-        if user.role != "admin" and task.user != user:
+        if user.role != "admin" and task.assignee != user:
             raise PermissionDenied("You can only delete your own tasks.")
 
         TaskRepository.delete_task(task)
@@ -53,17 +55,21 @@ class TaskComponents:
     def partial_update_task(user, pk, data):
         pass
     
-    def get_tasks_assigned_by_user(user):
+    def get_tasks_assigned_by_user(user, filters=None, search_query=None):
         tasks = TaskRepository.get_tasks_by_user(user).order_by('-created_at')
         if not tasks:
             return {"detail": "Tasks not found for this user"}, 404
-        return tasks
+        filterd_tasks, error = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
+        return filterd_tasks
     
-    def get_tasks_filtered(user, filters=None, search_query=None):
-        tasks = TaskRepository.get_tasks_for_user(user)
+    def get_tasks_assigned_for_user (user, filters=None, search_query=None):
+        tasks = TaskRepository.get_tasks_for_user(user).order_by('-created_at')
         if not tasks:
             return None, {"detail": "Tasks not found fro this user"}
+        filterd_tasks, error = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
+        return filterd_tasks
 
+    def get_tasks_filtered(tasks, filters=None, search_query=None):
         if search_query:
             tasks = tasks.filter(
                 Q(title__icontains=search_query) |
@@ -71,35 +77,32 @@ class TaskComponents:
             )
 
         if filters:
-            if 'priority' in filters:
+            if 'priority' in filters and filters['priority']:
                 tasks = tasks.filter(priority=filters['priority'])
             
-            if 'status' in filters:
+            if 'status' in filters and filters['status']:
                 tasks = tasks.filter(status=filters['status'])
 
-            if 'category' in filters:
-                tasks = tasks.filter(category=filters['category'])
+            if 'category' in filters and filters['category']:
+                tasks = tasks.filter(category=filters['category'] )
 
-            if 'start_date' in filters and 'end_date' in filters:
-                try:
-                    start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
-                    end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
-                    tasks = tasks.filter(created_at__range=(start_date, end_date))
-                except ValueError:
-                    pass  
+            # if 'start_date' in filters and 'end_date' in filters and filters['start_date'] and filters['end_date']:
+            #     try:
+            #         start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
+            #         end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
+            #         tasks = tasks.filter(created_at__range=(start_date, end_date))
+            #     except ValueError:
+            #         pass  
 
         return tasks, None
     
     def _handle_create_task( user, data):
-        print(f"user {user}, data {data}")
         
         serializer = TaskSerializer(data=data)
         if serializer.is_valid():
-            print("serializer is valid")
             task = TaskRepository.create_task(user, serializer.validated_data)
             return task, status.HTTP_201_CREATED
         
-        print("Serializer errors:", serializer.errors) 
         return None, Response({"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
     
 

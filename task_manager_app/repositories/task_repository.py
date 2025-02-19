@@ -4,7 +4,7 @@ from .. serializers.task_serializers import TaskSerializer
 class TaskRepository:
     
     def get_task_by_id(pk):
-        return Task.objects.filter(pk=pk)
+        return Task.objects.filter(pk=pk).first()
     
     def get_all_tasks():
         return Task.objects.all()

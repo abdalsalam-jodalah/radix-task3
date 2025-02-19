@@ -10,6 +10,8 @@ from ..models.user_device_mdoels import UserDevice
 from .user_components import UserComponents
 from .user_device_components import UserDeviceComponents
 import json
+import jwt
+from django.conf import settings
 
 class AuthComponents():
     def authenticate_user(email, password):
@@ -37,14 +39,29 @@ class AuthComponents():
         except UserDevice.DoesNotExist:
             raise ValidationError("User not found or already logged out.")
     def extract_token(auth_header):
-        if not auth_header or not auth_header.startswith("Bearer "):
+
+        if not  auth_header or not auth_header.startswith("Bearer "):
             return None 
         try:
             token_str = auth_header.split(" ")[2]  
+
             token = AccessToken(token_str) 
+
             return token
-        except Exception:
-            return None  
+        except Exception as err:
+            return None 
+    def decode_expired_token(auth_header):
+        try:
+            if not auth_header.startswith("Bearer "):
+                return None
+
+            token_str = auth_header.split(" ")[2]  
+            decoded = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
+            return decoded
+
+        except jwt.InvalidTokenError:
+            return None
+         
     def extract_user_id_from_request(request):
         auth_header= request.headers.get("Authorization")
         return AuthComponents.extract_user_id_from_auth_header(auth_header)
@@ -86,12 +103,10 @@ class AuthComponents():
         if device.get("status") == "exist_active":
             return Response({"error": "This device is already registered and active."}, status=status.HTTP_226_IM_USED)
         refresh = RefreshToken.for_user(user)
-
         if not refresh:
            return Response({"error": "refresh token has problem "}, status=status.HTTP_226_IM_USED)
         try:
             UserDeviceComponents.logout_all_devices_for_user(user)
-
         except UserDevice.DoesNotExist:
             pass
 

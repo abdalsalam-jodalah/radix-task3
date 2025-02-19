@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 from ..repositories.user_device_repository import UserDeviceRepository
 from ..models.user_device_mdoels import UserDevice
-
+from ..models.user_models import User
 
 class UserDeviceComponents():
     def generate_device_id(user_id, device_name, device_type,user_agent):
@@ -14,7 +14,6 @@ class UserDeviceComponents():
     def authenticate_device(user, device_token):
         try:
             existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
-
             if existing_device:
                 device = existing_device 
                 if device.is_active:
@@ -44,9 +43,10 @@ class UserDeviceComponents():
          
     def logout_all_devices_for_user(user):
         try:
-            devices = UserDeviceRepository.fetch_Device_by_token(user.id)
-            for device in devices:
-                UserDeviceComponents.logout_device(device)
+            if isinstance(user, User):
+                devices = UserDeviceRepository.fetch_Device_by_userid(user.id)
+                for device in devices:
+                    UserDeviceComponents.logout_device(device)
         except UserDevice.DoesNotExist:
             raise ValidationError("Device not found or already logged out.")
     

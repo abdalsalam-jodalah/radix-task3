@@ -15,24 +15,27 @@ class TaskCategoryApi(APIView):
 
     def get(self, request, pk=None):
         try:
+            print (f"inside the iid ")
             if pk:
                 category = TaskCategoryComponents.get_category(pk)
+                print(f"category: {category}")
                 if not category:
                     return Response({"detail": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
                 serializer = TaskCategorySerializer(category)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 categories = TaskCategoryComponents.get_all_categories()
-                page = self.paginate_queryset(categories)
+                paginator = self.pagination_class()
+                page = paginator.paginate_queryset(categories, request, view=self)
                 if page is not None:
                     serializer = TaskCategorySerializer(page, many=True)
-                    return self.get_paginated_response(serializer.data)
+                    return paginator.get_paginated_response(serializer.data)
                 else:
                     serializer = TaskCategorySerializer(categories, many=True)
                     return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error fetching categories: {e}")
-            return Response({"detail": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": f"An error occurred {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
         serializer = TaskCategorySerializer(data=request.data)
@@ -45,8 +48,10 @@ class TaskCategoryApi(APIView):
                 return Response({"detail": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, pk):
+    def put(self, request, pk=None):
         try:
+            print(f"request.data: ")
+            
             updated_category = TaskCategoryComponents.update_category(pk, request.data)
             if not updated_category:
                 return Response({"detail": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -54,7 +59,7 @@ class TaskCategoryApi(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error updating category: {e}")
-            return Response({"detail": "An error occurred"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"detail": f"An error occurred {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def patch(self, request, pk):
         try:

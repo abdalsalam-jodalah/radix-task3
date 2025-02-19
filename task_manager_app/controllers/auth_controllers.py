@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 
 from ..permissions.user_permissions import IsSingleDevice
+from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 from ..components.auth_comopnents import AuthComponents
 from ..components.shared_components import SharedComponents 
 from ..components.user_components import UserComponents
@@ -19,7 +20,7 @@ class AuthApi(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [] 
-        return [IsAuthenticated(), IsSingleDevice()]
+        return [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
     
     # def dispatch(self, request, *args, **kwargs):
     #     if request.method.lower() == "post":
@@ -29,6 +30,7 @@ class AuthApi(APIView):
     #     return super().dispatch(request, *args, **kwargs)
 
     renderer_classes = [JSONRenderer]
+    authentication_classes = []
 
     def post(self, request):
         """Handles user login."""
@@ -44,8 +46,6 @@ class AuthApi(APIView):
                 return Response({"error": "Missing required fields in request."}, status=status.HTTP_400_BAD_REQUEST)
 
             user = AuthComponents.authenticate_user(email=request_data["email"], password=request_data["password"])
-         
-
             if not user:
                 logger.warning(SharedComponents.get_log_message(
                     "AuthApi", "POST", None, additional_info="Invalid login attempt"
@@ -56,14 +56,16 @@ class AuthApi(APIView):
 
             if not data or "refresh" not in data or "access_token" not in data:
                 logger.error(SharedComponents.get_log_message(
-                    "AuthApi", "POST", user, additional_info="Token generation failed"
+                    "AuthApi", "POST", data, additional_info="Token generation failed"
                 ))
+
                 return Response({"error": "Error signing user, invalid token."}, status=status.HTTP_400_BAD_REQUEST)
 
             logger.info(SharedComponents.get_log_message(
                 "AuthApi", "POST", user, additional_info="User logged in successfully"
             ))
-            
+
+
             return Response({
                 'message': 'Login successful!',
                 'access_token': data["access_token"],
@@ -72,7 +74,7 @@ class AuthApi(APIView):
         
         except AttributeError as err:
             logger.error(SharedComponents.get_log_message(
-                    "AuthApi", "POST", None, additional_info=f"Error during logout: {str(err)}"
+                    "AuthApi", "POST", None, additional_info=f"Error during login: {str(err)}"
             ))
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
