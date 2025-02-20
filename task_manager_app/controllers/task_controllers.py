@@ -21,7 +21,6 @@ class TaskApi(APIView):
     permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
     pagination_class = CustomPagination
     def get(self, request, pk=None):
-        print( f"pk: {pk}") 
 
         try:
             user = AC.get_user(request)
@@ -41,7 +40,6 @@ class TaskApi(APIView):
                 "start_date": request.GET.get("start_date"),
                 "end_date": request.GET.get("end_date"),
             }
-            print(f"filters: {filters}")
             tasks, response_status = TaskComponents.get_tasks_assigned_for_user(user, filters)
             if tasks is None:
                 return Response(response_status, status=status.HTTP_404_NOT_FOUND)
@@ -76,7 +74,6 @@ class TaskApi(APIView):
                     message=f"You have been assigned a new task: {task.name}",
                     task=task
                 )
-                print(f"notification: {notification}")
                 send_task_notification.delay(notification.id)
                 return Response( {"task": TaskSerializer(task).data}, status.HTTP_201_CREATED )
             
@@ -153,7 +150,6 @@ class ByUser(APIView):
             }
             search_query = request.GET.get("search", None)
             tasks = TaskComponents.get_tasks_assigned_by_user(user, filters)
-            print(f"tasks: {tasks}")
             
             paginator = self.pagination_class()
             paginated_tasks = paginator.paginate_queryset(tasks, request)
@@ -169,7 +165,6 @@ class ByUser(APIView):
 
             paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
             serializer = TaskSerializer(paginated_tasks, many=True)
-            print(f"filters: {filters}")
 
             return self.pagination_class().get_paginated_response(serializer.data)
         except Exception as e:  

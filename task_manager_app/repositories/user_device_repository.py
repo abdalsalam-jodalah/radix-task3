@@ -16,7 +16,6 @@ class UserDeviceRepository():
         return UserDevice.objects.filter( device_token=device_token)
     
     def fetch_Device_by_userid(user_id):
-        print(f"user_id---->{user_id}")
         return UserDevice.objects.filter(user_id=user_id)
     
     def create_device(user,device_name,device_type,device_token,is_active,login_time,logout_time):

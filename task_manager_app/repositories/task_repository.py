@@ -16,7 +16,6 @@ class TaskRepository:
         return Task.objects.filter(assignee=user.id)
     
     def create_task(user, validated_data):
-        print (validated_data)
         return Task.objects.create( **validated_data)
 
 

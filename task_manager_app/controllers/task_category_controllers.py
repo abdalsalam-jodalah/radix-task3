@@ -15,10 +15,8 @@ class TaskCategoryApi(APIView):
 
     def get(self, request, pk=None):
         try:
-            print (f"inside the iid ")
             if pk:
                 category = TaskCategoryComponents.get_category(pk)
-                print(f"category: {category}")
                 if not category:
                     return Response({"detail": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
                 serializer = TaskCategorySerializer(category)
@@ -50,7 +48,6 @@ class TaskCategoryApi(APIView):
 
     def put(self, request, pk=None):
         try:
-            print(f"request.data: ")
             
             updated_category = TaskCategoryComponents.update_category(pk, request.data)
             if not updated_category:
