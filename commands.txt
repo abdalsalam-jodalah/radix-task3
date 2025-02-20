@@ -1,0 +1,10 @@
+redis-server
+celery -A authApi  worker --loglevel=info
+ 
+ 
+chmod +x start.sh
+
+docker build -t my-django-app .
+docker run -p 8000:8000 my-django-app
+or 
+docker-compose up --build
