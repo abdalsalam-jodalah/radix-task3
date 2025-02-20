@@ -13,5 +13,3 @@ celery
 redis
 
 
-redis-server
- celery -A authApi  worker --loglevel=info
