@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from django.db import models
 import logging
+from .role_models import Role
 
 logger = logging.getLogger("models")
 
@@ -16,9 +17,13 @@ class User(AbstractUser):
     class RoleChoices(models.TextChoices):
         ADMIN = "admin", "Admin"
         USER = "user", "User"
+        MANAGER = "manager", "Manager"
+        SUB_USERS = "sub_user", "Sub_User"
+
     id = models.AutoField(primary_key=True)
     email = models.EmailField(unique=True)  
-    role = models.CharField(max_length=5, choices=RoleChoices.choices, default=RoleChoices.USER)
+    role = models.ForeignKey(Role, verbose_name=("user role"), on_delete=models.CASCADE, related_name="users")
+    # role = models.CharField(max_length=20, choices=RoleChoices.choices, default=RoleChoices.USER)
     full_name = models.CharField(max_length=255, blank=True, null=True)
     is_logedin = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Account Created At")

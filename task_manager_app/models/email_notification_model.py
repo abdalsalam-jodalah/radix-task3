@@ -4,6 +4,11 @@ from .user_models import User
 from .task_models import Task
 
 class EmailNotification(models.Model):
+    class Meta:
+        verbose_name = "Email"
+        verbose_name_plural = "Emails"
+        db_table = '_email_notification'
+        
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
     message = models.TextField()
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="notifications")

@@ -25,6 +25,8 @@ urlpatterns = [
     path("", include('task_manager_app.urls.task_urls') ),
     path("", include('task_manager_app.urls.auth_urls') ),
     path("", include('task_manager_app.urls.task_category_urls') ),
+    path("", include('task_manager_app.urls.role_permission_urls') ),
+
 
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

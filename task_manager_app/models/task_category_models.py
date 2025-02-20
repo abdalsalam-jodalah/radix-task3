@@ -4,7 +4,7 @@ class TaskCategory(models.Model):
     class Meta:
         verbose_name = "Category"
         verbose_name_plural = "Categories"
-        db_table = 'category'
+        db_table = '_category'
 
     name = models.CharField(max_length=255, default="No name")
     description = models.TextField(max_length=255, default="No description")

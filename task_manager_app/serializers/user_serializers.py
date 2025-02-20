@@ -3,11 +3,11 @@ import re
 from ..serializers.user_device_serializers import UserDeviceSerializer
 from ..serializers.task_serializers import TaskSerializer
 from ..models.user_models import User
-
+from ..serializers.role_serializers import RoleSerializer
 class UserSerializer(serializers.ModelSerializer):
     devices = UserDeviceSerializer(many=True, read_only=True)
     tasks = TaskSerializer(many=True, read_only=True)
-
+    role = RoleSerializer()
     class Meta:
         model = User
         fields = [
@@ -20,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
             "tasks",
             "created_at",
             "updated_at",
+            'role',
         ]
         extra_kwargs = {
             "password": {"write_only": True},

@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import traceback
 
 def wait_for_db(retries=5, delay=3):
     """Waits for the database to be available before proceeding."""
@@ -42,7 +43,7 @@ def main():
             "on your PYTHONPATH. Did you forget to activate a virtual environment?"
         ) from exc
     except Exception as e:
-        print(f"\n❌ An unexpected error occurred: {e}\n")
+        print (f"Unexpected Error: {e}\n{traceback.format_exc()}")
         sys.exit(1)
 
 

@@ -77,7 +77,7 @@ class TaskApi(APIView):
                 send_task_notification.delay(notification.id)
                 return Response( {"task": TaskSerializer(task).data}, status.HTTP_201_CREATED )
             
-            status_code = response_status.get("status") if isinstance(response_status, dict) else 400
+            status_code = response_status.get("status")
             return Response(
                 {"task": TaskSerializer(task).data} if task else {"error": "Invalid request"},
                 status=int(status_code)
