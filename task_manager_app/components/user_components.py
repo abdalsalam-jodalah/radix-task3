@@ -12,14 +12,14 @@ class UserComponents():
         except User.DoesNotExist:
             raise ValidationError("User not found!")
         
-    def get_user_by_username(username):
+    def get_user_by_email(email):
         try:
-            return UserRepository.fetch_user_by_username
+            return UserRepository.fetch_user_by_email(email)
         except User.DoesNotExist:
             raise ValidationError("User not found!")
 
     def create_user(user_data):
-        UserRepository.create_user(user_data)
+        return UserRepository.create_user(user_data)
         
 
     def update_user(user_data):

@@ -11,15 +11,15 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "name",
+            "full_name",
             "role",
-            "username",
+            "is_logedin",
+            "email",
             "password",
             "devices",
-            "is_logedin",
+            "tasks",
             "created_at",
             "updated_at",
-            "tasks",
         ]
         extra_kwargs = {
             "password": {"write_only": True},
@@ -28,7 +28,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at": {"read_only": True},
         }
 
-    def validate_username(self, value):
+    def validate_email(self, value):
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         if not re.match(email_regex, value):
             raise serializers.ValidationError("Enter a valid email address.")

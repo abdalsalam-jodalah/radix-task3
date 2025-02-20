@@ -9,15 +9,20 @@ from ..models.user_models import User
 from ..models.user_device_mdoels import UserDevice
 from .user_components import UserComponents
 from .user_device_components import UserDeviceComponents
+import json
+import jwt
+from django.conf import settings
 
 class AuthComponents():
-    def authenticate_user(username, password):
+    def authenticate_user(email, password):
         try:
-            user = UserComponents.get_user_by_username(username)
+            user = UserComponents.get_user_by_email(email)
             if not user.password.startswith('pbkdf2_'):
-                user.password = make_password(user.password) 
+                user.password = make_password(user.id) 
                 user.save()
         except User.DoesNotExist:
+            return None
+        except Exception as err:
             return None
         if not user.check_password(password):
             return None
@@ -34,14 +39,29 @@ class AuthComponents():
         except UserDevice.DoesNotExist:
             raise ValidationError("User not found or already logged out.")
     def extract_token(auth_header):
-        if not auth_header or not auth_header.startswith("Bearer "):
+
+        if not  auth_header or not auth_header.startswith("Bearer "):
             return None 
         try:
             token_str = auth_header.split(" ")[2]  
+
             token = AccessToken(token_str) 
+
             return token
-        except Exception:
-            return None  
+        except Exception as err:
+            return None 
+    def decode_expired_token(auth_header):
+        try:
+            if not auth_header.startswith("Bearer "):
+                return None
+
+            token_str = auth_header.split(" ")[2]  
+            decoded = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
+            return decoded
+
+        except jwt.InvalidTokenError:
+            return None
+         
     def extract_user_id_from_request(request):
         auth_header= request.headers.get("Authorization")
         return AuthComponents.extract_user_id_from_auth_header(auth_header)
@@ -53,30 +73,52 @@ class AuthComponents():
         except Exception as err:
             return None  
         
+    def fetch_user_data(request):
+        try:
+            body_data = json.loads(request.body.decode('utf-8')) 
+        except json.JSONDecodeError:
+            body_data = {}  
+        
+        return {
+            "email": body_data.get("email"),
+            "password": body_data.get("password")
+        }
+
+    
     def fetch_user_request(request):
        return {
-            "username": request.data.get("username"),
-            "password": request.data.get("password"),
-            "device_name": request.headers.get("Sec-Ch-Ua-Platform", "Unknown Device"),
-            "device_type": request.headers.get("Sec-Ch-Ua", "Unknown Device"),
+            "device_name": request.headers.get( "device_name", "Unknown Device"),
+            "device_type": request.headers.get( "device_type", "Unknown Device"),
+            # "device_name": request.headers.get("Sec-Ch-Ua-Platform" | "device_name", "Unknown Device"),
+            # "device_type": request.headers.get("Sec-Ch-Ua"| "device_type", "Unknown Device"),
             "user_agent": request.headers.get("User-Agent", "Unknown User Agent"),
             "auth_header": request.headers.get("Authorization")
         }
 
     def sign_user(user, device_name, device_type , user_agent ):
-        device_identifier = UserDeviceComponents.generate_device_id(user.id, device_name, device_type, user_agent)
+        if isinstance(user, User):
+            device_identifier = UserDeviceComponents.generate_device_id(user.id, device_name, device_type, user_agent)
+
         device = UserDeviceComponents.authenticate_device(user, device_identifier)
-    
         if device.get("status") == "exist_active":
             return Response({"error": "This device is already registered and active."}, status=status.HTTP_226_IM_USED)
         refresh = RefreshToken.for_user(user)
         if not refresh:
            return Response({"error": "refresh token has problem "}, status=status.HTTP_226_IM_USED)
+        try:
+            UserDeviceComponents.logout_all_devices_for_user(user)
+        except UserDevice.DoesNotExist:
+            pass
 
-        UserDeviceComponents.logout_all_devices_for_user(user)
         UserDeviceComponents.register_device(user, device_name, device_type, device_identifier, device.get("status"))
-        user.is_logedin =True
-        user.save()
+     
+        if isinstance(user, User): 
+            user.is_logedin = True
+            user.save()
+
+        else:
+            return Response({"error": "User not found or invalid."}, status=status.HTTP_404_NOT_FOUND)
+    
         return {
             "refresh": refresh, 
             "access_token":str(refresh.access_token)

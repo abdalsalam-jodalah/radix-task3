@@ -7,3 +7,11 @@ social-auth-app-django
 pymysql
 python-dotenv
 drf-yasg
+social_django
+rest_framework_simplejwt
+celery
+redis
+
+
+redis-server
+ celery -A authApi  worker --loglevel=info

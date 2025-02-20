@@ -1,4 +1,5 @@
 from ..models.task_models import Task
+from .. serializers.task_serializers import TaskSerializer
 
 class TaskRepository:
     
@@ -9,10 +10,14 @@ class TaskRepository:
         return Task.objects.all()
     
     def get_tasks_by_user(user):
-        return Task.objects.filter(user=user)
+        return Task.objects.filter(assigner=user.id)
     
-    def create_task(user, serializer):
-        return serializer.save(user=user)
+    def get_tasks_for_user(user):
+        return Task.objects.filter(assignee=user.id)
+    
+    def create_task(user, validated_data):
+        return Task.objects.create( **validated_data)
+
 
     def update_task(task, serializer):
         return serializer.save()
