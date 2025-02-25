@@ -164,7 +164,7 @@ DATABASES = {
         'PORT': os.getenv('DATABASE_PORT'),
     }
 }
-DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
+# DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=720),

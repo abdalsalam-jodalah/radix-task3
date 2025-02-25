@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..permissions.user_permissions import IsSingleDevice
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
+from ..permissions.role_based_permissions import HasRolePermission  
 from ..pagination import CustomPagination
 from ..components.auth_comopnents import AuthComponents as AC
 from ..components.task_components import TaskComponents
@@ -18,9 +19,16 @@ logger = logging.getLogger("views")
 
 class TaskApi(APIView):
     authentication_classes = []
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
     pagination_class = CustomPagination
+    permission_required = {
+        "GET":   "view_task",   
+        "POST":  "create_task",
+        "PUT":   "update_task",   
+        "DELETE": "delete_task" 
+    }
     def get(self, request, pk=None):
+        self.permission_required = self.permission_required["GET"]  
 
         try:
             user = AC.get_user(request)
@@ -61,6 +69,8 @@ class TaskApi(APIView):
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
+        self.permission_required = self.permission_required["POST"]  
+
         try: 
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
@@ -87,6 +97,8 @@ class TaskApi(APIView):
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request, pk=None):
+        self.permission_required = self.permission_required["PUT"]  
+
         try:
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
@@ -100,6 +112,8 @@ class TaskApi(APIView):
     
 
     def delete(self, request, pk=None):
+        self.permission_required = self.permission_required["DELETE"]  
+
         try:
             user = AC.get_user(request)
 
@@ -130,6 +144,7 @@ class ByUser(APIView):
     pagination_class = CustomPagination
 
     def get(self, request,pk=None):
+        self.permission_required = self.permission_required["GET"]  
         try:
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
@@ -170,3 +185,4 @@ class ByUser(APIView):
         except Exception as e:  
             logger.error(f"Error getting task: {e}")
             return Response({"error": f"Invalid request:  {e} \n{e.with_traceback(e.__traceback__)}"}, status=status.HTTP_400_BAD_REQUEST)
+   
