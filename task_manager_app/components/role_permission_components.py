@@ -61,7 +61,10 @@ class RolePermissionComponent:
     def get_permissions_by_role(role):
         return RolePermissionRepository.get_permissions_by_role(role)
 
-
+    def get_role_permissions(role):
+        if not role:
+            return set()
+        return {perm.name for perm in role.permissions.all()}  
 
 
     # def get_role_permissions(role_name):
@@ -73,15 +76,34 @@ class RolePermissionComponent:
     #         return set()
 
     def get_role_actions(user, model_name):
-        """Dynamically map role permissions to CRUD operations for any model"""
-        # permissions = get_role_permissions(user.role.name if user.role else "Guest")
-        permissions = RolePermissionComponent.get_permissions_by_role(user.role.name if user.role else "Guest")
+        if not user or not user.role:
+            return {}
 
+        permissions = RolePermissionComponent.get_permissions_by_role(user.role.name if user.role else "Guest")
         Model = apps.get_model('task_manager_app', model_name)
 
         return {
-            "get": lambda: Model.objects.all() if f"view_all_{model_name.lower()}" in permissions else Model.objects.filter(user=user),
+            "get":    lambda: Model.objects.all() if f"view_all_{model_name.lower()}" in permissions else Model.objects.filter(user=user),
             "create": lambda data: Model.objects.create(**data) if f"create_{model_name.lower()}" in permissions else None,
             "update": lambda instance, data: instance.update(**data) if f"edit_{model_name.lower()}" in permissions else None,
             "delete": lambda instance: instance.delete() if f"delete_{model_name.lower()}" in permissions else None,
         }
+    
+
+    def fetch_action_permissions(user, model_name):
+        if not user or not user.role:
+            return {}
+        
+        permissions = RolePermissionComponent.get_permissions_by_role(user.role.name if user.role else "Guest")
+        Model = apps.get_model('task_manager_app', model_name)
+        return {
+            "get":    f"view_all_{model_name.lower()}" in permissions,
+            "create": f"create_{model_name.lower()}" in permissions,
+            "update": f"edit_{model_name.lower()}" in permissions,
+            "delete": f"delete_{model_name.lower()}" in permissions,
+        }
+    def decode_permissions(user, user_permissions):
+        if not user or not user.role:
+            return {}
+        permissions = RolePermissionComponent.get_permissions_by_role(user.role.name if user.role else "Guest")
+        pass

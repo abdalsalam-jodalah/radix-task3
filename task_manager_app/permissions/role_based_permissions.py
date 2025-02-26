@@ -18,7 +18,8 @@ class HasRolePermission(BasePermission):
         
         if user_role == "Admin":
             return True
-        
+        return all(perm in user_permissions for perm in required_permissions) if isinstance(required_permissions, list) else required_permissions in user_permissions
+
         if isinstance(required_permissions, list):
             return all(perm in permission_names for perm in required_permissions)
         return required_permissions in permission_names
