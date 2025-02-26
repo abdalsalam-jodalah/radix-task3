@@ -33,8 +33,9 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_tasks")
     category = models.ForeignKey(TaskCategory, on_delete=models.CASCADE, related_name="tasks")
     name = models.CharField(max_length=255, default="No name")
-    status = models.CharField(max_length=11, choices=StatusChoices.choices, default=StatusChoices.NOT_STARTED)
-    priority = models.CharField(max_length=11, choices=PriorityChoices.choices, default=PriorityChoices.HIGH)
+    status = models.CharField(max_length=11, choices=StatusChoices.choices, default=StatusChoices.NOT_STARTED, db_index=True)
+    priority = models.CharField(max_length=11, choices=PriorityChoices.choices, default=PriorityChoices.HIGH, db_index=True)
+    due_date = models.DateTimeField(default=now) 
     start_date = models.DateTimeField(default=now)
     end_date = models.DateTimeField(default=now)
     description = models.TextField(max_length=1000, default="No description")
@@ -50,7 +51,10 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
 
         if self.start_date >= self.end_date:
             raise ValidationError("Start date must be before end date.")
-
+        
+        if self.due_date < self.start_date:
+            raise ValidationError("Due date must be after the start date.")
+            
         conflict_exists = Task.objects.filter(
             assigner=self.assigner,
             start_date__lt=self.end_date,  
@@ -70,3 +74,5 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
             logger.error(f"Task '{self.name}' could not be saved: {e}")
             raise
     
+    def is_overdue(self):
+        return self.due_date < now() and self.status != self.StatusChoices.COMPLETED

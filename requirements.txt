@@ -11,5 +11,6 @@ social_django
 rest_framework_simplejwt
 celery
 redis
+pytest-django
 
-
+python manage.py test task_manager_app.tests
