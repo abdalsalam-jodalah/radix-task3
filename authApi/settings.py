@@ -162,6 +162,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT'),
+        'TEST': {
+            'NAME': 'test_database',
+        }
     }
 }
 # DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
