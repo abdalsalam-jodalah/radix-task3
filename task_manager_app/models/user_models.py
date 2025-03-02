@@ -25,10 +25,11 @@ class User(AbstractUser):
     role = models.ForeignKey(Role, verbose_name=("user role"), on_delete=models.CASCADE, related_name="users")
     # role = models.CharField(max_length=20, choices=RoleChoices.choices, default=RoleChoices.USER)
     full_name = models.CharField(max_length=255, blank=True, null=True)
-    is_logedin = models.BooleanField(default=False)
+    is_logged_in = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Account Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated At")
-
+    parent = models.ForeignKey("User", related_name="sub_users", on_delete=models.SET_NULL, null=True, blank=True)  # Fixed parent FK
+    username = None  
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["full_name"]  
 
@@ -56,7 +57,7 @@ class User(AbstractUser):
 
     def set_login_status(self, status: bool):
         """Helper method to update login status with logging."""
-        self.is_logedin = status
+        self.is_logged_in = status
         self.save()
         logger.info(f"User {self.email} login status updated to {status}")
 

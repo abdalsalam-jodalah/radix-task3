@@ -95,7 +95,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'task_manager_app',
-
+    'django_celery_beat',
     # 'social_django',
     # 'allauth',
     # 'allauth.account',

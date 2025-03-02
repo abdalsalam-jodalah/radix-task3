@@ -34,7 +34,7 @@ class AuthComponents():
     
     def logout_user(user):
         try:
-            user.is_logedin = False
+            user.is_logged_in = False
             user.save()
         except UserDevice.DoesNotExist:
             raise ValidationError("User not found or already logged out.")
@@ -113,7 +113,7 @@ class AuthComponents():
         UserDeviceComponents.register_device(user, device_name, device_type, device_identifier, device.get("status"))
      
         if isinstance(user, User): 
-            user.is_logedin = True
+            user.is_logged_in = True
             user.save()
 
         else:

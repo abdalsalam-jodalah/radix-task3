@@ -14,6 +14,7 @@ from ..components.task_notification import send_task_notification
 from ..models.user_models import User
 from ..models.task_models import Task
 import logging 
+from ..components.role_permission_components import RolePermissionComponent
 
 logger = logging.getLogger("views")
 
@@ -21,22 +22,35 @@ class TaskApi(APIView):
     authentication_classes = []
     permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
     pagination_class = CustomPagination
-    permission_required = {
-        "GET":   "view_task",   
-        "POST":  "create_task",
-        "PUT":   "update_task",   
-        "DELETE": "delete_task" 
-    }
+   
     def get(self, request, pk=None):
-        self.permission_required = self.permission_required["GET"]  
-
         try:
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            if pk:
-                task, response_data, response_status = TaskComponents.get_task_response(user, pk)
+            
+            print("----here0")
+            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
 
+            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="get")
+            print(f"---Herre1{type(filtered_perms)}, {filtered_perms}")
+
+            if filtered_perms:  # Ensure there's at least one permission
+                for perm in filtered_perms:
+                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
+                    print(f"model: {model}, action: {action}, access_level: {access_level}")
+                    result = RolePermissionComponent.dispatch(user, model, action, access_level)
+                print("---Herre2")
+
+            else:
+                print("No matching permissions found.")
+                result = None  # Handle the case where no permissions match
+            if result is None:
+                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
+            print("---Herre3")
+            if pk:
+                task, response_data = TaskComponents.get_task_from_tasks(result, pk)
                 if task is None or isinstance(task, Task ):
                     return Response(response_data, status=response_status)
                 return Response(response_data, status=response_status)
@@ -48,7 +62,8 @@ class TaskApi(APIView):
                 "start_date": request.GET.get("start_date"),
                 "end_date": request.GET.get("end_date"),
             }
-            tasks, response_status = TaskComponents.get_tasks_assigned_for_user(user, filters)
+             
+            tasks, response_status = TaskComponents.get_tasks_filtered(result, filters)
             if tasks is None:
                 return Response(response_status, status=status.HTTP_404_NOT_FOUND)
             paginator = self.pagination_class()
@@ -60,23 +75,24 @@ class TaskApi(APIView):
             serializer = TaskSerializer(paginated_tasks, many=True)
             return paginator.get_paginated_response(serializer.data)
 
-            paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
-            serializer = TaskSerializer(paginated_tasks, many=True)
-
-            return self.pagination_class().get_paginated_response(serializer.data)
         except Exception as e:
             logger.error(f"Error getting task: {e.with_traceback( e.__traceback__)}")
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, request):
-        self.permission_required = self.permission_required["POST"]  
-
         try: 
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             data = TaskComponents.fetch_user_data(request)
-            task, response_status = TaskComponents._handle_create_task(user=user, data=data)
+
+            perms = RolePermissionComponent.get_permissions_by_role(user.role)
+            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="post")
+            result = RolePermissionComponent.dispatch(user,  model, action, access_level, data)
+            if result is None:
+                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
+            task, response_status = result
 
             if task and task.name:
                 notification = EmailNotification.objects.create(
@@ -97,14 +113,19 @@ class TaskApi(APIView):
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
     
     def put(self, request, pk=None):
-        self.permission_required = self.permission_required["PUT"]  
 
         try:
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-
-            response_data, response_status = TaskComponents.update_task(user, pk, request.data)
+            
+            perms = RolePermissionComponent.get_permissions_by_role(user.role)
+            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="put")
+            result = RolePermissionComponent.dispatch(user,  model, action, access_level, request.data, pk)
+            if result is None:
+                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
+            response_data, response_status = result
             return Response(response_data, status=response_status)
         except Exception as e:
             logger.error(f"Error creating task: {e}")
@@ -112,15 +133,18 @@ class TaskApi(APIView):
     
 
     def delete(self, request, pk=None):
-        self.permission_required = self.permission_required["DELETE"]  
-
         try:
             user = AC.get_user(request)
-
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-
-            response_data, response_status = TaskComponents.delete_task(user, pk)
+            
+            perms = RolePermissionComponent.get_permissions_by_role(user.role)
+            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="delete")
+            result = RolePermissionComponent.dispatch(user,  model, action, access_level, request.data, pk)
+            if result is None:
+                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            
+            response_data, response_status = result
             return Response(response_data, status=response_status)
         except Exception as e:
             logger.error(f"Error creating task: {e}")
@@ -144,7 +168,6 @@ class ByUser(APIView):
     pagination_class = CustomPagination
 
     def get(self, request,pk=None):
-        self.permission_required = self.permission_required["GET"]  
         try:
             user = AC.get_user(request)
             if not user or not isinstance(user, User):
@@ -168,20 +191,12 @@ class ByUser(APIView):
             
             paginator = self.pagination_class()
             paginated_tasks = paginator.paginate_queryset(tasks, request)
-            
+
             if paginated_tasks is None:
                 return Response({"error": "No tasks available for the given filters."}, status=status.HTTP_404_NOT_FOUND)
 
             serializer = TaskSerializer(paginated_tasks, many=True)
             return paginator.get_paginated_response(serializer.data)
-
-
-
-
-            paginated_tasks = self.pagination_class().paginate_queryset(tasks, request)
-            serializer = TaskSerializer(paginated_tasks, many=True)
-
-            return self.pagination_class().get_paginated_response(serializer.data)
         except Exception as e:  
             logger.error(f"Error getting task: {e}")
             return Response({"error": f"Invalid request:  {e} \n{e.with_traceback(e.__traceback__)}"}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,7 +1,10 @@
 from ..repositories.role_permission_repository import RoleRepository, PermissionRepository
 from ..repositories.role_permission_repository import RolePermissionRepository
 from django.apps import apps
-
+from ..dispatchers.base_dispatcher import  BaseDispatcher
+import importlib
+from ..models.permission_models import Permission 
+from ..models.role_permission_models import RolePermission
 class RoleComponent:
     def list_roles():
         return RoleRepository.get_all_roles()
@@ -102,8 +105,99 @@ class RolePermissionComponent:
             "update": f"edit_{model_name.lower()}" in permissions,
             "delete": f"delete_{model_name.lower()}" in permissions,
         }
-    def decode_permissions(user, user_permissions):
+
+    def get_action_permissions(perms, action="get"):
+        decoded = RolePermissionComponent.decode_permissions(perms)
+        return [perm for perm in decoded if perm.action == action]  
+
+
+    def decode_permissions(perms):
+        decoded_perms = []
+        print(f"++++++++++++++parts: {perms}")
+
+        for perm in perms:
+            print(f"-----------------Processing: {perm}")
+            if isinstance(perm, Permission):
+                decoded_perms.append(perm)
+                continue  # Already a Permission object, skip further processing
+            
+            if not isinstance(perm, str) or not perm.strip():
+                print(f"Skipping invalid permission: {repr(perm)}")  # Debugging
+                continue  # Skip empty or non-string values
+           
+            try:
+                parts = perm.split(":")
+                
+                if len(parts) != 3:
+                    print(f"Invalid permission structure: {repr(perm)}")  # Debugging
+                    continue  # Skip malformed entries
+                
+                model, action, access_level = parts
+                print(f"parts: ")
+                # Handle `_` wildcard (optional logic, depends on your system)
+                if model == "_":
+                    model = "global"  # You can rename `_` to a more meaningful value
+
+                decoded_perms.append(Permission(model=model, action=action, access_level=access_level))
+                print(f"Decoded -> Model: {model}, Action: {action}, Access Level: {access_level}")  # Debugging
+
+            except Exception as e:
+                print(f"Exception in decode_permissions for {repr(perm)}: {e}")
+        return decoded_perms
+
+    def get_permissions_by_role_decoded(role):
+        """Fetch permissions assigned to a specific role."""
+        perm_ids = RolePermission.objects.filter(role=role).values_list("permission_id", flat=True)
+
+        permissions = Permission.objects.filter(id__in=perm_ids).values("id", "model", "action", "access_level")
+
+        # Debugging: Print retrieved permissions
+        for perm in permissions:
+            print(f"ID: {perm['id']}, Model: {perm['model']}, Action: {perm['action']}, Access Level: {perm['access_level']}")
+        return list(permissions) 
+    
+    def get_action_permissions(perms, action="get"):
+        """Returns a list of permission dictionaries filtered by action."""
+        return [
+            {"model": perm["model"], "action": perm["action"], "access_level": perm["access_level"]}
+            for perm in perms if perm["action"] == action
+        ]
+
+
+    def dispatch(user, model, action, access_level, data=None, pk=None):
         if not user or not user.role:
-            return {}
-        permissions = RolePermissionComponent.get_permissions_by_role(user.role.name if user.role else "Guest")
-        pass
+            return "Unauthorized"
+        
+        dispatcher_class = RolePermissionComponent.get_dispatcher(model)
+        dispatcher = dispatcher_class()
+        
+        # Action methods with proper argument handling
+        action_methods = {
+            "post": dispatcher.post,
+            "get": dispatcher.get,
+            "put": dispatcher.put,
+            "delete": dispatcher.delete,
+        }
+
+        if action in action_methods:
+            method = action_methods[action]
+            num_params = method.__code__.co_argcount  # Check how many parameters the method expects
+            
+            # Dynamically pass only the required parameters based on expected argument count
+            if num_params == 3:  # `get()` method expects 3 parameters
+                return method(user, model, access_level)
+            elif num_params == 4:  # `post()`, `put()`, `delete()` expect 4 parameters
+                return method(user, model, access_level, data)
+            elif num_params == 5:  # If the method expects 5 parameters (rare case)
+                return method(user, model, access_level, data, pk)
+        else:
+            return "Invalid action"
+
+    def get_dispatcher(model):
+        dispatcher_module_name = f"dispatchers.{model.__class__.__name__.lower()}_dispatcher"
+        try:
+            dispatcher_module = importlib.import_module(dispatcher_module_name)
+            dispatcher_class_name = f"{model.__class__.__name__}Dispatcher"
+            return getattr(dispatcher_module, dispatcher_class_name, BaseDispatcher)
+        except ModuleNotFoundError:
+            return BaseDispatcher  
