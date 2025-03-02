@@ -106,7 +106,7 @@ class RolePermissionComponent:
             "delete": f"delete_{model_name.lower()}" in permissions,
         }
 
-    def get_action_permissions(perms, action="get"):
+    def get_action_permissions_old(perms, action="get"):
         decoded = RolePermissionComponent.decode_permissions(perms)
         return [perm for perm in decoded if perm.action == action]  
 
@@ -165,39 +165,49 @@ class RolePermissionComponent:
 
 
     def dispatch(user, model, action, access_level, data=None, pk=None):
-        if not user or not user.role:
-            return "Unauthorized"
-        
-        dispatcher_class = RolePermissionComponent.get_dispatcher(model)
-        dispatcher = dispatcher_class()
-        
-        # Action methods with proper argument handling
-        action_methods = {
-            "post": dispatcher.post,
-            "get": dispatcher.get,
-            "put": dispatcher.put,
-            "delete": dispatcher.delete,
-        }
-
-        if action in action_methods:
-            method = action_methods[action]
-            num_params = method.__code__.co_argcount  # Check how many parameters the method expects
+        try:
+            if not user or not user.role:
+                return "Unauthorized"
             
-            # Dynamically pass only the required parameters based on expected argument count
-            if num_params == 3:  # `get()` method expects 3 parameters
-                return method(user, model, access_level)
-            elif num_params == 4:  # `post()`, `put()`, `delete()` expect 4 parameters
-                return method(user, model, access_level, data)
-            elif num_params == 5:  # If the method expects 5 parameters (rare case)
+            dispatcher_class = RolePermissionComponent.get_dispatcher(model)
+            dispatcher = dispatcher_class()
+            print (f"ppppp dispatcher_class: {dispatcher_class}")
+            print (f"ppppp dispatcher: {dispatcher}")
+
+            action_methods = {
+                "post": dispatcher.post,
+                "get": dispatcher.get,
+                "put": dispatcher.put,
+                "delete": dispatcher.delete,
+            }
+            print("-0-0 dispatch ")
+            if action in action_methods:
+                method = action_methods[action]
+                print(f" action_methods[action] { action_methods[action]}")
+                num_params = method.__code__.co_argcount 
+                print(f"^^^^^^^^ {method}, \n {num_params}")
+                
+                # if num_params == 3:  
+                #     return method(user, model, access_level)
+                # elif num_params == 4:  
+                #     return method(user, model, access_level, data)
+                # elif num_params == 5:  
+                print ("call method---------------")
                 return method(user, model, access_level, data, pk)
-        else:
-            return "Invalid action"
+            else:
+                return "Invalid action"
+        except Exception as err:
+            print(f"err in dispatch ::::::::{err}")
 
     def get_dispatcher(model):
-        dispatcher_module_name = f"dispatchers.{model.__class__.__name__.lower()}_dispatcher"
+        dispatcher_module_name = f"task_manager_app.dispatchers.{model.lower()}_dispatcher"
         try:
+            print(f"dispatcher_module_name : {dispatcher_module_name}  model.__class__.__name__.lower(){model}")
             dispatcher_module = importlib.import_module(dispatcher_module_name)
-            dispatcher_class_name = f"{model.__class__.__name__}Dispatcher"
+            dispatcher_class_name = f"{model.capitalize()}Dispatcher"
+            print(f"dispatcher_class_name: {dispatcher_class_name}")
+
             return getattr(dispatcher_module, dispatcher_class_name, BaseDispatcher)
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as err:
+            print (f"___________ get_dispatcher err: {err}")
             return BaseDispatcher  

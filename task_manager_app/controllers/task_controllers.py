@@ -15,6 +15,7 @@ from ..models.user_models import User
 from ..models.task_models import Task
 import logging 
 from ..components.role_permission_components import RolePermissionComponent
+import traceback
 
 logger = logging.getLogger("views")
 
@@ -29,26 +30,19 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            print("----here0")
             perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-
             filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="get")
-            print(f"---Herre1{type(filtered_perms)}, {filtered_perms}")
-
-            if filtered_perms:  # Ensure there's at least one permission
+            if filtered_perms: 
                 for perm in filtered_perms:
                     model, action, access_level = perm["model"], perm["action"], perm["access_level"]
-                    print(f"model: {model}, action: {action}, access_level: {access_level}")
                     result = RolePermissionComponent.dispatch(user, model, action, access_level)
-                print("---Herre2")
-
             else:
                 print("No matching permissions found.")
-                result = None  # Handle the case where no permissions match
+                result = None 
+
             if result is None:
                 return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
             
-            print("---Herre3")
             if pk:
                 task, response_data = TaskComponents.get_task_from_tasks(result, pk)
                 if task is None or isinstance(task, Task ):
@@ -86,9 +80,16 @@ class TaskApi(APIView):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             data = TaskComponents.fetch_user_data(request)
 
-            perms = RolePermissionComponent.get_permissions_by_role(user.role)
-            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="post")
-            result = RolePermissionComponent.dispatch(user,  model, action, access_level, data)
+            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
+            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="post")
+            if filtered_perms: 
+                for perm in filtered_perms:
+                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
+                    result = RolePermissionComponent.dispatch(user, model, action, access_level, data)
+            else:
+                print("No matching permissions found.")
+                result = None 
+
             if result is None:
                 return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
             
@@ -109,9 +110,8 @@ class TaskApi(APIView):
                 status=int(status_code)
             )
         except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+            logger.error(f"Error creating task: {e}\n{traceback.format_exc()}")
+            return Response({"error": f"Invalid request: {e}"}, status=status.HTTP_400_BAD_REQUEST)
     def put(self, request, pk=None):
 
         try:
@@ -119,9 +119,16 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            perms = RolePermissionComponent.get_permissions_by_role(user.role)
-            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="put")
-            result = RolePermissionComponent.dispatch(user,  model, action, access_level, request.data, pk)
+            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
+            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="put")
+            if filtered_perms: 
+                for perm in filtered_perms:
+                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
+                    result = RolePermissionComponent.dispatch(user, model, action, access_level, request.data, pk)
+            else:
+                print("No matching permissions found.")
+                result = None 
+
             if result is None:
                 return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
             
@@ -138,9 +145,16 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            perms = RolePermissionComponent.get_permissions_by_role(user.role)
-            model, action, access_level =  RolePermissionComponent.get_action_permissions(perms, action="delete")
-            result = RolePermissionComponent.dispatch(user,  model, action, access_level, request.data, pk)
+            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
+            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="delete")
+            if filtered_perms: 
+                for perm in filtered_perms:
+                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
+                    result = RolePermissionComponent.dispatch(user, model, action, access_level)
+            else:
+                print("No matching permissions found.")
+                result = None 
+
             if result is None:
                 return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
             

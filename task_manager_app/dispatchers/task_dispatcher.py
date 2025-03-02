@@ -3,6 +3,8 @@ from .base_dispatcher import BaseDispatcher
 
 class TaskDispatcher(BaseDispatcher):
     def get(self, user, model, access_level, data=None, pk=None):
+        print(f"insidee getP: {user, model, access_level, data, pk} ")
+
         if access_level == "all":
             return TaskComponents.get_all_tasks()
         elif access_level == "own+below":
@@ -12,6 +14,8 @@ class TaskDispatcher(BaseDispatcher):
         return None 
     
     def post(self, user, model, access_level, data, pk=None):
+        print(f"insidee post: {user, model, access_level, data, pk} ")
+
         if access_level == "all":
             return TaskComponents._handle_create_task(user=user, data=data)
         if access_level == "own+below":
