@@ -1,7 +1,10 @@
 from ..models.role_models import Role
 from ..models.permission_models import Permission
 from ..models.role_permission_models import RolePermission
-
+from django.db import transaction
+from ..models.role_permission_models import RolePermission
+from ..models.role_models import Role
+from ..models.permission_models import Permission
 class RoleRepository:
     def get_all_roles():
         return list(Role.objects.all())  
@@ -45,4 +48,44 @@ class PermissionRepository:
 class RolePermissionRepository:
     def get_permissions_by_role(role):
         return RolePermission.objects.filter(role=role)
-    
+    def list_role_permissions():
+        return RolePermission.objects.select_related('role', 'permission').all()
+
+    def get_role_permission(pk):
+        try:
+            return RolePermission.objects.select_related('role', 'permission').get(pk=pk)
+        except RolePermission.DoesNotExist:
+            return None
+
+    def create_role_permission(data):
+        try:
+            with transaction.atomic():
+                role = Role.objects.get(pk=data.get('role_id'))
+                permission = Permission.objects.get(pk=data.get('permission_id'))
+                rp = RolePermission.objects.create(role=role, permission=permission)
+                return rp
+        except Exception as e:
+            raise e
+
+    def update_role_permission(pk, data):
+        try:
+            with transaction.atomic():
+                rp = RolePermission.objects.get(pk=pk)
+                if 'role_id' in data:
+                    role = Role.objects.get(pk=data.get('role_id'))
+                    rp.role = role
+                if 'permission_id' in data:
+                    permission = Permission.objects.get(pk=data.get('permission_id'))
+                    rp.permission = permission
+                rp.save()
+                return rp
+        except RolePermission.DoesNotExist:
+            return None
+
+    def delete_role_permission(pk):
+        try:
+            rp = RolePermission.objects.get(pk=pk)
+            rp.delete()
+            return True
+        except RolePermission.DoesNotExist:
+            return False

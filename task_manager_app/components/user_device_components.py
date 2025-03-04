@@ -8,12 +8,15 @@ from ..models.user_models import User
 class UserDeviceComponents():
     def generate_device_id(user_id, device_name, device_type,user_agent):
         raw_data = f"{user_id}-{device_name}-{device_type}-{user_agent}"
+        print(f"raw data: {raw_data}")
         return raw_data
         # return hashlib.sha256(raw_data.encode()).hexdigest()
 
     def authenticate_device(user, device_token):
         try:
             existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
+            print(f"Help 1: {existing_device.is_active}")
+
             if existing_device:
                 device = existing_device 
                 if device.is_active:
@@ -36,7 +39,7 @@ class UserDeviceComponents():
             
     def logout_device_basedon_token(device_identifier):
         try:
-            device = UserDeviceRepository.fetch_Device_by_token(device_token=device_identifier.lower())
+            device = UserDeviceRepository.fetch_Device_by_token(device_token=device_identifier)
             UserDeviceComponents.logout_device(device)
         except UserDevice.DoesNotExist:
             raise ValidationError("Device not found or already logged out.")

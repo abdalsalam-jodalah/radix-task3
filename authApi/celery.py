@@ -12,6 +12,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "send-overdue-reminders-daily": {
         "task": "your_app.tasks.send_overdue_task_reminders",  
-        "schedule": crontab(hour=8, minute=0), 
+        # "schedule": crontab(hour=15, minute=0), 
+        "schedule": 600, 
     },
 }

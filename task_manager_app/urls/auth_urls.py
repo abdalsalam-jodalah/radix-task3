@@ -11,7 +11,7 @@ from ..controllers.auth_controllers import   AuthApi
 urlpatterns = [
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/login/',           AuthApi.as_view(), name='login'),  
-    path('auth/logit/',           AuthApi.as_view(), name='logout'),  
+    path('auth/logout/',           AuthApi.as_view(), name='logout'),  
     # path('accounts/', include('allauth.urls')),
     # path('dashboard/', dashboard, name='dashboard'),
     # path('oauth/logout/', custom_logout, name='logout'),  # Logout endpoint

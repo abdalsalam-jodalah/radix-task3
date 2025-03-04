@@ -13,7 +13,7 @@ class UserDeviceRepository():
         return UserDevice.objects.filter(device_token=device_token).first()
     
     def fetch_Device_by_token( device_token=None):
-        return UserDevice.objects.filter( device_token=device_token)
+        return UserDevice.objects.filter( device_token=device_token).first()
     
     def fetch_Device_by_userid(user_id):
         return UserDevice.objects.filter(user_id=user_id)

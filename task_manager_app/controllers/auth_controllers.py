@@ -2,7 +2,6 @@ from django.contrib.auth import logout
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 
 from ..permissions.user_permissions import IsSingleDevice
@@ -20,19 +19,25 @@ class AuthApi(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [] 
-        return [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+        return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()]
     
     # def dispatch(self, request, *args, **kwargs):
     #     if request.method.lower() == "post":
     #         if "logout" in request.path:
     #             return self.log_out(request, *args, **kwargs)
-    #         return self.sign_in(request, *args, **kwargs)  
+    #         return self.login(request, *args, **kwargs)  
     #     return super().dispatch(request, *args, **kwargs)
 
     renderer_classes = [JSONRenderer]
     authentication_classes = []
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
+        """Handles both login and logout based on the request path."""
+        if "logout" in request.path:
+            return self.log_out(request, *args, **kwargs)
+        return self.login(request, *args, **kwargs)
+    
+    def login(self, request, *args, **kwargs):
         """Handles user login."""
         try:
             request_data = AuthComponents.fetch_user_request(request)
@@ -53,7 +58,9 @@ class AuthApi(APIView):
                 return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
 
             data = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
-
+            if isinstance(data, Response):
+                return data
+            
             if not data or "refresh" not in data or "access_token" not in data:
                 logger.error(SharedComponents.get_log_message(
                     "AuthApi", "POST", data, additional_info="Token generation failed"
@@ -84,7 +91,7 @@ class AuthApi(APIView):
 
 
 
-    def put (self, request):
+    def log_out (self, request, *args, **kwargs):
         """Handles user logout from a single device."""
         logger.info("inside logout")
 

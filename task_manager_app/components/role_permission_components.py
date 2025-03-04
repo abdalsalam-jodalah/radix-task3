@@ -5,6 +5,11 @@ from ..dispatchers.base_dispatcher import  BaseDispatcher
 import importlib
 from ..models.permission_models import Permission 
 from ..models.role_permission_models import RolePermission
+from ..repositories.role_permission_repository import RolePermissionRepository
+from rest_framework.exceptions import NotAcceptable
+from rest_framework.exceptions import NotAcceptable
+from rest_framework.exceptions import NotAcceptable
+
 class RoleComponent:
     def list_roles():
         return RoleRepository.get_all_roles()
@@ -68,7 +73,20 @@ class RolePermissionComponent:
         if not role:
             return set()
         return {perm.name for perm in role.permissions.all()}  
+    def list_role_permissions():
+        return RolePermissionRepository.list_role_permissions()
 
+    def get_role_permission(pk):
+        return RolePermissionRepository.get_role_permission(pk)
+
+    def create_role_permission(data):
+        return RolePermissionRepository.create_role_permission(data)
+
+    def update_role_permission(pk, data):
+        return RolePermissionRepository.update_role_permission(pk, data)
+
+    def delete_role_permission(pk):
+        return RolePermissionRepository.delete_role_permission(pk)  
 
     # def get_role_permissions(role_name):
     #     """Fetch role permissions dynamically from the database."""
@@ -171,8 +189,6 @@ class RolePermissionComponent:
             
             dispatcher_class = RolePermissionComponent.get_dispatcher(model)
             dispatcher = dispatcher_class()
-            print (f"ppppp dispatcher_class: {dispatcher_class}")
-            print (f"ppppp dispatcher: {dispatcher}")
 
             action_methods = {
                 "post": dispatcher.post,
@@ -180,34 +196,57 @@ class RolePermissionComponent:
                 "put": dispatcher.put,
                 "delete": dispatcher.delete,
             }
-            print("-0-0 dispatch ")
             if action in action_methods:
                 method = action_methods[action]
-                print(f" action_methods[action] { action_methods[action]}")
-                num_params = method.__code__.co_argcount 
-                print(f"^^^^^^^^ {method}, \n {num_params}")
-                
-                # if num_params == 3:  
-                #     return method(user, model, access_level)
-                # elif num_params == 4:  
-                #     return method(user, model, access_level, data)
-                # elif num_params == 5:  
-                print ("call method---------------")
                 return method(user, model, access_level, data, pk)
             else:
                 return "Invalid action"
         except Exception as err:
-            print(f"err in dispatch ::::::::{err}")
-
+                raise Exception("Exception in dispatching action.")
+        
     def get_dispatcher(model):
         dispatcher_module_name = f"task_manager_app.dispatchers.{model.lower()}_dispatcher"
         try:
-            print(f"dispatcher_module_name : {dispatcher_module_name}  model.__class__.__name__.lower(){model}")
             dispatcher_module = importlib.import_module(dispatcher_module_name)
             dispatcher_class_name = f"{model.capitalize()}Dispatcher"
-            print(f"dispatcher_class_name: {dispatcher_class_name}")
-
             return getattr(dispatcher_module, dispatcher_class_name, BaseDispatcher)
         except ModuleNotFoundError as err:
-            print (f"___________ get_dispatcher err: {err}")
+            print (f"[get_dispatcher] err: {err}")
             return BaseDispatcher  
+        
+
+
+    def handle_action(user, action_model, action, data=None, pk=None):
+        perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
+        
+        specific_perms = [
+            perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
+            if perm.get("model") == action_model
+        ]
+        
+        if specific_perms:
+            filtered_perms = specific_perms
+        else:
+            filtered_perms = [
+                perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
+                if perm.get("model") == "_"
+            ]
+
+        result = None
+        if filtered_perms:
+            perm = filtered_perms[0]
+            model = perm["model"]
+            action = perm["action"]
+            access_level = perm["access_level"]
+            result = RolePermissionComponent.dispatch(user, action_model, action, access_level, data, pk)
+        else:
+            print(f"No matching permissions found for model: {action_model}")
+            result = None
+
+        if result is None:
+            raise NotAcceptable(detail="You dont have permissions")
+        elif result == "Invalid action":
+            raise NotAcceptable(detail="Invalid action")
+        elif result == "Unauthorized":
+            raise NotAcceptable(detail="Invalid token or user not found.")
+        return result

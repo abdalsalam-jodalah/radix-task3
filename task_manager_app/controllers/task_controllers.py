@@ -16,6 +16,7 @@ from ..models.task_models import Task
 import logging 
 from ..components.role_permission_components import RolePermissionComponent
 import traceback
+from rest_framework.exceptions import NotAcceptable
 
 logger = logging.getLogger("views")
 
@@ -30,19 +31,9 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="get")
-            if filtered_perms: 
-                for perm in filtered_perms:
-                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
-                    result = RolePermissionComponent.dispatch(user, model, action, access_level)
-            else:
-                print("No matching permissions found.")
-                result = None 
+          
+            result = RolePermissionComponent.handle_action(user, "task","get")
 
-            if result is None:
-                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            
             if pk:
                 task, response_data = TaskComponents.get_task_from_tasks(result, pk)
                 if task is None or isinstance(task, Task ):
@@ -68,6 +59,8 @@ class TaskApi(APIView):
 
             serializer = TaskSerializer(paginated_tasks, many=True)
             return paginator.get_paginated_response(serializer.data)
+        except NotAcceptable as exp:
+                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
         except Exception as e:
             logger.error(f"Error getting task: {e.with_traceback( e.__traceback__)}")
@@ -80,19 +73,8 @@ class TaskApi(APIView):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             data = TaskComponents.fetch_user_data(request)
 
-            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="post")
-            if filtered_perms: 
-                for perm in filtered_perms:
-                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
-                    result = RolePermissionComponent.dispatch(user, model, action, access_level, data)
-            else:
-                print("No matching permissions found.")
-                result = None 
+            result = RolePermissionComponent.handle_action(user, "task", "post",data=data)
 
-            if result is None:
-                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            
             task, response_status = result
 
             if task and task.name:
@@ -109,6 +91,9 @@ class TaskApi(APIView):
                 {"task": TaskSerializer(task).data} if task else {"error": "Invalid request"},
                 status=int(status_code)
             )
+        except NotAcceptable as exp:
+                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         except Exception as e:
             logger.error(f"Error creating task: {e}\n{traceback.format_exc()}")
             return Response({"error": f"Invalid request: {e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -119,21 +104,13 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="put")
-            if filtered_perms: 
-                for perm in filtered_perms:
-                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
-                    result = RolePermissionComponent.dispatch(user, model, action, access_level, request.data, pk)
-            else:
-                print("No matching permissions found.")
-                result = None 
-
-            if result is None:
-                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            
+            result = RolePermissionComponent.handle_action(user, "task", "put",data=request.data, pk=pk)
+           
             response_data, response_status = result
             return Response(response_data, status=response_status)
+        except NotAcceptable as exp:
+                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         except Exception as e:
             logger.error(f"Error creating task: {e}")
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -145,21 +122,13 @@ class TaskApi(APIView):
             if not user or not isinstance(user, User):
                 return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-            filtered_perms = RolePermissionComponent.get_action_permissions(perms, action="delete")
-            if filtered_perms: 
-                for perm in filtered_perms:
-                    model, action, access_level = perm["model"], perm["action"], perm["access_level"]
-                    result = RolePermissionComponent.dispatch(user, model, action, access_level)
-            else:
-                print("No matching permissions found.")
-                result = None 
+            result = RolePermissionComponent.handle_action(user,  "task","delete",pk=pk)
 
-            if result is None:
-                return Response({"error": "You dont have permissions "}, status=status.HTTP_406_NOT_ACCEPTABLE)
-            
             response_data, response_status = result
             return Response(response_data, status=response_status)
+        except NotAcceptable as exp:
+                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         except Exception as e:
             logger.error(f"Error creating task: {e}")
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -172,6 +141,9 @@ class TaskApi(APIView):
             
             response_data, response_status = TaskComponents.partial_update_task(user, pk,request.data)
             return Response(response_data, status=response_status)
+        except NotAcceptable as exp:
+                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         except Exception as e:
             logger.error(f"Error creating task: {e}")
             return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)

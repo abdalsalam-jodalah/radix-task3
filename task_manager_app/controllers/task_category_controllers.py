@@ -6,11 +6,12 @@ from ..pagination import CustomPagination
 from ..components.task_category_components import TaskCategoryComponents
 from ..serializers.task_category_serializers import TaskCategorySerializer
 import logging
+from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 
 logger = logging.getLogger("views")
 
 class TaskCategoryApi(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]
+    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):

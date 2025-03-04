@@ -1,7 +1,6 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 from ..permissions.user_permissions import IsSingleDevice
 from ..serializers.user_serializers import UserSerializer
@@ -9,6 +8,7 @@ from ..components.user_components import UserComponents
 from ..components.shared_components import SharedComponents
 from ..pagination import CustomPagination
 import logging 
+from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 
 logger = logging.getLogger("views")
 
@@ -24,7 +24,7 @@ class UserApi(APIView):
         if self.request.method == 'POST':
             return [] 
         else:
-            return [IsAuthenticated(), IsSingleDevice()] 
+            return [IsAuthenticatedAndUpdateStatus, IsSingleDevice] 
         
     def get(self, request, user_id=None):
         """Retrieve a single user or list all users"""
