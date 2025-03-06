@@ -202,7 +202,7 @@ class RolePermissionComponent:
             else:
                 return "Invalid action"
         except Exception as err:
-                raise Exception("Exception in dispatching action.")
+                raise Exception(f"Exception in dispatching action. {err}")
         
     def get_dispatcher(model):
         dispatcher_module_name = f"task_manager_app.dispatchers.{model.lower()}_dispatcher"

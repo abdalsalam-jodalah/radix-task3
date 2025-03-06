@@ -1,6 +1,6 @@
 from ..components.task_components import TaskComponents
 from .base_dispatcher import BaseDispatcher
-from constants.access_levels import AccessLevel
+from ..constants.access_levels import AccessLevel
 
 class TaskDispatcher(BaseDispatcher):
     def get(self, user, model, access_level, data=None, pk=None):

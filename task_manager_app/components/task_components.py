@@ -19,14 +19,15 @@ class TaskComponents:
         if user.role != "admin" and serializer.data.get('assignee') != user.id:
             raise PermissionDenied("You can only view your own tasks.")
         return task, serializer.data, 200
+        
     def get_task_from_tasks(tasks, pk):
         for task in tasks:
             if isinstance(task, dict) and task.get("id") == pk:
-                return task, {"message": "Task found", "task": task}
+                return task, {"message": "Task found", "task": task}, status.HTTP_200_OK
             elif hasattr(task, "id") and task.id == pk:
-                return task, {"message": "Task found", "task": task}
+                return task, {"message": "Task found", "task": task}, status.HTTP_404_NOT_FOUND
 
-        return None, {"message": "Task not found", "task": None}
+        return None, {"message": "Task not found", "task": None}, status.HTTP_404_NOT_FOUND
 
     def create_task(user, data):
         serializer = TaskSerializer(data=data)

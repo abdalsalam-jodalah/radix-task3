@@ -35,7 +35,7 @@ class TaskApi(APIView):
             result = RolePermissionComponent.handle_action(user, "task","get")
 
             if pk:
-                task, response_data = TaskComponents.get_task_from_tasks(result, pk)
+                task, response_data, response_status = TaskComponents.get_task_from_tasks(result, pk)
                 if task is None or isinstance(task, Task ):
                     return Response(response_data, status=response_status)
                 return Response(response_data, status=response_status)
