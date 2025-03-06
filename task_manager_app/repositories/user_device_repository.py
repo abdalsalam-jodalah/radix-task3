@@ -1,4 +1,4 @@
-from ..models.user_device_mdoels import UserDevice
+from ..models.user_device_models import UserDevice
 from django.core.exceptions import ValidationError
 from ..models.user_models import User
 

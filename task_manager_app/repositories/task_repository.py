@@ -1,5 +1,4 @@
 from ..models.task_models import Task
-from .. serializers.task_serializers import TaskSerializer
 
 class TaskRepository:
     

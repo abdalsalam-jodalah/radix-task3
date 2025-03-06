@@ -2,20 +2,18 @@ import hashlib
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 from ..repositories.user_device_repository import UserDeviceRepository
-from ..models.user_device_mdoels import UserDevice
+from ..models.user_device_models import UserDevice
 from ..models.user_models import User
 
 class UserDeviceComponents():
     def generate_device_id(user_id, device_name, device_type,user_agent):
         raw_data = f"{user_id}-{device_name}-{device_type}-{user_agent}"
-        print(f"raw data: {raw_data}")
         return raw_data
         # return hashlib.sha256(raw_data.encode()).hexdigest()
 
     def authenticate_device(user, device_token):
         try:
             existing_device = UserDeviceRepository.fetch_Device_by_userid_token(user, device_token)
-            print(f"Help 1: {existing_device.is_active}")
 
             if existing_device:
                 device = existing_device 
@@ -27,6 +25,7 @@ class UserDeviceComponents():
                 return {"status": "not_exist"}
         
         except Exception as err:
+            return {"status": "not_exist"}
             print(f"exception {err}")
 
 

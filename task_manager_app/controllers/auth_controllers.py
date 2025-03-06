@@ -6,13 +6,12 @@ from rest_framework.renderers import JSONRenderer
 
 from ..permissions.user_permissions import IsSingleDevice
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
-from ..components.auth_comopnents import AuthComponents
+from ..components.auth_components import AuthComponents
 from ..components.shared_components import SharedComponents 
 from ..components.user_components import UserComponents
 from ..components.user_device_components import UserDeviceComponents 
 
 import logging 
-
 logger = logging.getLogger("views")
 
 class AuthApi(APIView):
@@ -20,13 +19,6 @@ class AuthApi(APIView):
         if self.request.method == 'POST':
             return [] 
         return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()]
-    
-    # def dispatch(self, request, *args, **kwargs):
-    #     if request.method.lower() == "post":
-    #         if "logout" in request.path:
-    #             return self.log_out(request, *args, **kwargs)
-    #         return self.login(request, *args, **kwargs)  
-    #     return super().dispatch(request, *args, **kwargs)
 
     renderer_classes = [JSONRenderer]
     authentication_classes = []
@@ -43,7 +35,7 @@ class AuthApi(APIView):
             request_data = AuthComponents.fetch_user_request(request)
             request_data.update(AuthComponents.fetch_user_data(request))
             required_fields = ["email", "password", "device_name", "device_type", "user_agent"]
-
+            print("#############################")
             if not all(request_data.get(field) for field in required_fields):
                 logger.warning(SharedComponents.get_log_message(
                     "AuthApi", "POST", None, additional_info="Missing required fields"

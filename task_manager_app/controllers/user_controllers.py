@@ -11,7 +11,7 @@ import logging
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 from ..components.role_permission_components import RolePermissionComponent
 logger = logging.getLogger("views")
-from ..components.auth_comopnents import AuthComponents as AC
+from ..components.auth_components import AuthComponents as AC
 from ..models.user_models import User
 
 class UserApi(APIView):

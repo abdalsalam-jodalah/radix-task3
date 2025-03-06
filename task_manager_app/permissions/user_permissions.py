@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import PermissionDenied
-from ..models.user_device_mdoels import UserDevice  
-from ..components.auth_comopnents import AuthComponents
+from ..models.user_device_models import UserDevice  
+from ..components.auth_components import AuthComponents
 from ..components.user_device_components import UserDeviceComponents
 
 from rest_framework.response import Response

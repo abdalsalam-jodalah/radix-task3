@@ -1,13 +1,15 @@
 from datetime import datetime
 from django.db.models import Q
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied
 from rest_framework import status
 from rest_framework.response import Response
+import json
+
 from ..serializers.task_serializers import TaskSerializer
 from ..repositories.task_repository import TaskRepository
 from ..components.shared_components import SharedComponents as SC
 from ..models.task_models import Task
-import json
+
 class TaskComponents:
     def get_task_response(user, pk):
         task = TaskRepository.get_task_by_id(pk)

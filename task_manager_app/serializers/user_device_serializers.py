@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models.user_device_mdoels import UserDevice
+from ..models.user_device_models import UserDevice
 
 class UserDeviceSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(read_only=True)

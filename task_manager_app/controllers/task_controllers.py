@@ -2,22 +2,23 @@
 from rest_framework import permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.exceptions import NotAcceptable
+import traceback
+
 from ..permissions.user_permissions import IsSingleDevice
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 from ..permissions.role_based_permissions import HasRolePermission  
 from ..pagination import CustomPagination
-from ..components.auth_comopnents import AuthComponents as AC
+from ..components.auth_components import AuthComponents as AC
 from ..components.task_components import TaskComponents
 from ..serializers.task_serializers import TaskSerializer
 from ..models.email_notification_model import EmailNotification
 from ..components.task_notification import send_task_notification
 from ..models.user_models import User
 from ..models.task_models import Task
-import logging 
 from ..components.role_permission_components import RolePermissionComponent
-import traceback
-from rest_framework.exceptions import NotAcceptable
 
+import logging 
 logger = logging.getLogger("views")
 
 class TaskApi(APIView):

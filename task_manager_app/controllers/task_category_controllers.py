@@ -1,13 +1,13 @@
-from rest_framework import permissions, status
+from rest_framework import  status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..permissions.user_permissions import IsSingleDevice
 from ..pagination import CustomPagination
 from ..components.task_category_components import TaskCategoryComponents
 from ..serializers.task_category_serializers import TaskCategorySerializer
-import logging
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 
+import logging
 logger = logging.getLogger("views")
 
 class TaskCategoryApi(APIView):

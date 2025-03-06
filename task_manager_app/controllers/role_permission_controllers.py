@@ -1,21 +1,18 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 from ..permissions.user_permissions import IsSingleDevice
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
-from ..serializers.user_serializers import UserSerializer
 from ..components.role_permission_components import RoleComponent, PermissionComponent
 from ..serializers.role_serializers import RoleSerializer
 from ..serializers.permission_serializers import  PermissionSerializer
 from ..components.shared_components import SharedComponents
-from ..pagination import CustomPagination
-import logging 
 from ..serializers.role_permission_serailizers import RolePermissionSerializer
 from ..components.role_permission_components import RolePermissionComponent
+from ..pagination import CustomPagination
 
-logger = logging.getLogger("views")
+import logging 
 logger = logging.getLogger("views")
 
 class RoleApi(APIView):

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
 from django.utils.timezone import now
-from ..components.auth_comopnents import AuthComponents
+from ..components.auth_components import AuthComponents
 from ..components.user_components import UserComponents
 from ..components.user_device_components import UserDeviceComponents
 from ..models.user_models import User

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from ..models.user_models import User
-from ..models.user_device_mdoels import UserDevice
+from ..models.user_device_models import UserDevice
 from .user_components import UserComponents
 from .user_device_components import UserDeviceComponents
 import json
@@ -87,10 +87,8 @@ class AuthComponents():
     
     def fetch_user_request(request):
        return {
-            "device_name": request.headers.get( "device_name", "Unknown Device"),
-            "device_type": request.headers.get( "device_type", "Unknown Device"),
-            # "device_name": request.headers.get("Sec-Ch-Ua-Platform" | "device_name", "Unknown Device"),
-            # "device_type": request.headers.get("Sec-Ch-Ua"| "device_type", "Unknown Device"),
+            "device_name": request.headers.get( "Device-Name", "Unknown Device"),
+            "device_type": request.headers.get( "Device-Type", "Unknown Device"),
             "user_agent": request.headers.get("User-Agent", "Unknown User Agent"),
             "auth_header": request.headers.get("Authorization")
         }

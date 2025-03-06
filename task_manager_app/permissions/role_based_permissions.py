@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission
-from ..components.auth_comopnents import AuthComponents
+from ..components.auth_components import AuthComponents
 from ..components.user_components import UserComponents
 from ..components.role_permission_components import RolePermissionComponent
 

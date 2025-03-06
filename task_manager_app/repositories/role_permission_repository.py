@@ -1,10 +1,8 @@
-from ..models.role_models import Role
-from ..models.permission_models import Permission
-from ..models.role_permission_models import RolePermission
 from django.db import transaction
-from ..models.role_permission_models import RolePermission
 from ..models.role_models import Role
 from ..models.permission_models import Permission
+from ..models.role_permission_models import RolePermission
+
 class RoleRepository:
     def get_all_roles():
         return list(Role.objects.all())  
