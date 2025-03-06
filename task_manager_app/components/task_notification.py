@@ -11,7 +11,7 @@ def send_task_notification(notification_id):
     
     if not notification.is_sent:
         subject = "New Task Assigned"
-        message = f"{notification.message}\n\nTask Details:\nTitle: {notification.task.name}"
+        message = f"{notification.message}\nTitle: {notification.task.name}\n\nTask Details:{notification.task}\n\n\n Task Manager app team..."
         recipient_email = notification.user.email
 
         send_mail(
