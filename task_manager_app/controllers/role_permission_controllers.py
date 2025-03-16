@@ -17,7 +17,8 @@ logger = logging.getLogger("views")
 
 class RoleApi(APIView):
     authentication_classes = []
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    permission_classes = [ IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
@@ -68,7 +69,8 @@ class RoleApi(APIView):
 
 class PermissionApi(APIView):
     authentication_classes = []
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    permission_classes = [ IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
@@ -117,7 +119,9 @@ class PermissionApi(APIView):
 
 class RolePermissionApi(APIView):
     authentication_classes = []
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    permission_classes = [ IsSingleDevice]
+
     pagination_class = CustomPagination
 
     def get(self, request, id=None):

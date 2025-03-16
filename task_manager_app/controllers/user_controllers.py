@@ -25,8 +25,9 @@ class UserApi(APIView):
         if self.request.method == 'POST':
             return [] 
         else:
-            return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()] 
-        
+            # return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()] 
+            return [IsSingleDevice()] 
+
     def get(self, request, id=None):
         logger.debug(SharedComponents.get_log_message("UserApi", "GET", request.user, id, "User", "Fetching user(s)"))
         user_subject = AC.get_user(request)
@@ -53,13 +54,15 @@ class UserApi(APIView):
         """Create a new user"""
         logger.debug(SharedComponents.get_log_message("UserApi", "POST", request.user, None, "User", "Creating new user"))
         user_subject = AC.get_user(request)
-        if not user_subject or not isinstance(user_subject, User):
-            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
+        # if user_subject:
+        #     return Response({"error": f"USER ALLREADY EXIST {user_subject}"}, status=status.HTTP_400_BAD_REQUEST)
+        user_subject.role=1   
         serializer = UserSerializer(data=request.data)
 
         if serializer.is_valid():
+            # user= RolePermissionComponent.handle_action( "user", "post",request.data)
             user= RolePermissionComponent.handle_action(user_subject, "user", "post",request.data)
+
             if user:
                 logger.info(SharedComponents.get_log_message("UserApi", "POST", request.user, user.id, "User", "User created successfully"))
                 return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)

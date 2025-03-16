@@ -10,7 +10,7 @@ from ..components.auth_components import AuthComponents
 from ..components.shared_components import SharedComponents 
 from ..components.user_components import UserComponents
 from ..components.user_device_components import UserDeviceComponents 
-
+from ..serializers.user_serializers import UserSerializer 
 import logging 
 logger = logging.getLogger("views")
 
@@ -18,7 +18,8 @@ class AuthApi(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [] 
-        return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()]
+        # return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()]
+        return [ IsSingleDevice()]
 
     renderer_classes = [JSONRenderer]
     authentication_classes = []
@@ -35,7 +36,6 @@ class AuthApi(APIView):
             request_data = AuthComponents.fetch_user_request(request)
             request_data.update(AuthComponents.fetch_user_data(request))
             required_fields = ["email", "password", "device_name", "device_type", "user_agent"]
-            print("#############################")
             if not all(request_data.get(field) for field in required_fields):
                 logger.warning(SharedComponents.get_log_message(
                     "AuthApi", "POST", None, additional_info="Missing required fields"
@@ -68,7 +68,8 @@ class AuthApi(APIView):
             return Response({
                 'message': 'Login successful!',
                 'access_token': data["access_token"],
-                'refresh_token': str(data["refresh"])
+                'refresh_token': str(data["refresh"]),
+                'user': UserSerializer(user).data
             }, status=status.HTTP_200_OK)
         
         except AttributeError as err:

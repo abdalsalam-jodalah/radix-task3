@@ -39,28 +39,47 @@ class AuthComponents():
         except UserDevice.DoesNotExist:
             raise ValidationError("User not found or already logged out.")
     def extract_token(auth_header):
+        if not auth_header:
+            return None
 
-        if not  auth_header or not auth_header.startswith("Bearer "):
-            return None 
+        if auth_header.startswith("Bearer "):
+            parts = auth_header.split(" ")
+            if len(parts) == 2:
+                token_str = parts[1]
+            else:
+                token_str = parts[2]
+
+        else:
+            token_str = auth_header
+
         try:
-            token_str = auth_header.split(" ")[2]  
-
-            token = AccessToken(token_str) 
-
+            token = AccessToken(token_str)
             return token
         except Exception as err:
-            return None 
-    def decode_expired_token(auth_header):
-        try:
-            if not auth_header.startswith("Bearer "):
-                return None
+            print(err)
+            return None
 
-            token_str = auth_header.split(" ")[2]  
+
+    def decode_expired_token(auth_header):
+        if not auth_header:
+            return None
+
+        if auth_header.startswith("Bearer "):
+            parts = auth_header.split(" ")
+            if len(parts) == 2:
+                token_str = parts[1]
+            else:
+                token_str = parts[2]
+        else:
+            token_str = auth_header
+
+        try:
             decoded = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
             return decoded
-
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as err:
+            print(err)
             return None
+
          
     def extract_user_id_from_request(request):
         auth_header= request.headers.get("Authorization")

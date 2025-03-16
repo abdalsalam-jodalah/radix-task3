@@ -17,7 +17,6 @@ class UserDispatcher(BaseDispatcher):
 
     def put(self, subject_user, model, access_level, data, pk):
         try:
-            print(f"----------in put {subject_user, model, access_level, data, pk}")
             try:
                 UserComponents.get_user_by_id(pk)
             except Exception:

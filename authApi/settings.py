@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     # 'rest_framework_simplejwt.token_blacklist', 
      'drf_yasg',
     # 'oauth2_provider',
+     "corsheaders"
 ]
 
 REST_FRAMEWORK = {
@@ -138,6 +139,8 @@ MIDDLEWARE = [
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     # 'allauth.account.middleware.AccountMiddleware',
     'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
+        "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -299,3 +302,16 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+    "device-name",
+    "device-type",
+]
+
+CORS_ALLOW_METHODS = ["GET", "POST","PUT", "DELETE", "OPTIONS"]

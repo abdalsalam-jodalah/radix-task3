@@ -11,11 +11,13 @@ import logging
 logger = logging.getLogger("views")
 
 class TaskCategoryApi(APIView):
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    permission_classes = [ IsSingleDevice]
+    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
         try:
+            print("test in cattt get")
             if pk:
                 category = TaskCategoryComponents.get_category(pk)
                 if not category:

@@ -23,7 +23,8 @@ logger = logging.getLogger("views")
 
 class TaskApi(APIView):
     authentication_classes = []
-    permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
+    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
+    # permission_classes = [ IsSingleDevice ]
     pagination_class = CustomPagination
    
     def get(self, request, pk=None):
