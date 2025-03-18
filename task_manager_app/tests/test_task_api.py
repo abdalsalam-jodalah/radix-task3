@@ -7,7 +7,7 @@ from rest_framework import status
 from task_manager_app.controllers.task_controllers import TaskApi, ByUser
 from task_manager_app.models.user_models import User
 from task_manager_app.models.task_models import Task
-from task_manager_app.models.email_notification_model import EmailNotification
+from task_manager_app.models.email_notification_models import EmailNotification
 
 class TaskApiTests(APITestCase):
     def setUp(self):

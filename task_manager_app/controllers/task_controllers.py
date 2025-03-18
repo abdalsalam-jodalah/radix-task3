@@ -12,7 +12,7 @@ from ..pagination import CustomPagination
 from ..components.auth_components import AuthComponents as AC
 from ..components.task_components import TaskComponents
 from ..serializers.task_serializers import TaskSerializer
-from ..models.email_notification_model import EmailNotification
+from ..models.email_notification_models import EmailNotification
 from ..components.task_notification import send_task_notification
 from ..models.user_models import User
 from ..models.task_models import Task

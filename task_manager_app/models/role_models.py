@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 import logging
 
 logger = logging.getLogger("models")
@@ -15,4 +16,16 @@ class Role(models.Model):
         verbose_name = "Role"
         verbose_name_plural = "Roles"
         db_table = '_role'
-        
+
+    def validate_name(self):
+        if not self.name:
+            raise ValidationError({"name": "Name is required."})
+
+    def clean(self):
+        super().clean()
+        self.validate_name()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        logger.debug(f"Saving Role {self.name}")
+        super().save(*args, **kwargs)

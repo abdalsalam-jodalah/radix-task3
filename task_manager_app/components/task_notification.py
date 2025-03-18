@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
-from ..models.email_notification_model import EmailNotification
+from ..models.email_notification_models import EmailNotification
 from django.utils.timezone import now
 from ..models.task_models import Task
 

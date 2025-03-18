@@ -82,3 +82,8 @@ class UserComponents:
     def delete_user(user_id):
         user = UserComponents.get_user_by_id(user_id)
         return UserRepository.delete_user(user)
+    def set_login_status(self, status: bool):
+        self.is_logged_in = status
+        self.save()
+        # logger.info(f"User {self.email} login status updated to {status}")
+

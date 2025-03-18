@@ -1,18 +1,16 @@
 from django.db import models
-from django.utils import timezone
-from django.contrib.auth.hashers import make_password  
 from django.utils.crypto import get_random_string
 from django.core.exceptions import ValidationError
-
 from .user_models import User
-
 import logging
-
 logger = logging.getLogger("models")
 
 class UserDevice(models.Model):
     class Meta:
         db_table = "_user_devices"
+        verbose_name = "Device"
+        verbose_name_plural = "Devices"
+        ordering = ['is_active']
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="devices")
     is_active = models.BooleanField(default=True)
@@ -28,16 +26,17 @@ class UserDevice(models.Model):
 
     def __str__(self):
         return f"{self.device_name} - {self.device_type} ({'Active' if self.is_active else 'Inactive'})"
-
-    def clean(self):
-        """Custom validation for device token."""
-        if not self.device_token or len(self.device_token) < 20:
-            raise ValidationError("Invalid device token. Must be at least 20 characters long.")
-
-    def save(self, *args, **kwargs):
-        """Custom save method with logging and security improvements."""
+ 
+    def validate_device_token(self):
         if not self.device_token:
+            raise ValidationError({"device_token":"Empty device token"})
             self.device_token = get_random_string(64)
 
-        logger.info(f"Saving device {self.device_name} ({self.device_type}) for user {self.user.email}")
+    def clean(self):
+        super().clean()
+        self.validate_device_token()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        logger.info(f"Saving Device {self.device_name} ({self.device_type}) for user {self.user.email}")
         super().save(*args, **kwargs)

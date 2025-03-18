@@ -1,5 +1,6 @@
 from django.db import models
 import logging
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger("models")
 class Permission(models.Model):
@@ -21,3 +22,16 @@ class Permission(models.Model):
         verbose_name_plural = "Permissions"
         db_table = '_permission'
         
+    
+    def validate_name(self):
+        if not self.name:
+            raise ValidationError({"name": "Name is required."})
+
+    def clean(self):
+        super().clean()
+        self.validate_name()
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        logger.debug(f"Saving Permission {self.name}")
+        super().save(*args, **kwargs)

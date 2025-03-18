@@ -1,4 +1,7 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+import logging
+logger = logging.getLogger("models")
 
 class TaskCategory(models.Model):
     class Meta:
@@ -11,3 +14,16 @@ class TaskCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+    def validate_name(self):
+        if not self.name:
+            raise ValidationError({"name": "Name is required."})
+
+    def clean(self):
+        super().clean()
+        self.validate_name()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        logger.debug(f"Saving Category {self.name}")
+        super().save(*args, **kwargs)
