@@ -279,6 +279,12 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "server.log"),
             "formatter": "detailed",
         },
+        "repositories": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "repositories.log"),
+            "formatter": "detailed",
+        },
     },
    "loggers": {
         "views": {"handlers": ["views"], "level": "DEBUG", "propagate": True},
@@ -286,6 +292,11 @@ LOGGING = {
         "models": {"handlers": ["models"], "level": "DEBUG", "propagate": True},
         "requests": {"handlers": ["requests"], "level": "INFO", "propagate": True},
         "django": {"handlers": ["server"], "level": "INFO", "propagate": True},
+          "repositories": {  
+            "handlers": ["repositories"],
+            "level": "INFO",
+            "propagate": True,
+        },
 },
 }
 

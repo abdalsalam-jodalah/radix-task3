@@ -43,7 +43,7 @@ class UserComponents:
 
     def get_own(user):
     
-        return UserRepository.filter_user_by_id(user.id)
+        return UserRepository.fetch_user_by_id(user.id)
 
     def get_children(user):
         immediate_children = list(UserRepository.fetch_children(user))
@@ -82,8 +82,9 @@ class UserComponents:
     def delete_user(user_id):
         user = UserComponents.get_user_by_id(user_id)
         return UserRepository.delete_user(user)
+    
     def set_login_status(self, status: bool):
         self.is_logged_in = status
         self.save()
         # logger.info(f"User {self.email} login status updated to {status}")
-
+# can u remove the aincdexu of tetstcuin 
