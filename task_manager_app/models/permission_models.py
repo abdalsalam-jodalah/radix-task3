@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 logger = logging.getLogger("models")
 class Permission(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(editable=False, primary_key=True)
     name = models.CharField(max_length=50, unique=True)
     model= models.CharField(max_length=50, blank=True, null=True)
     action= models.CharField(max_length=50, blank=True, null=True)

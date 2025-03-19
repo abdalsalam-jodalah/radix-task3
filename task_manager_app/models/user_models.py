@@ -14,41 +14,44 @@ class User(AbstractUser):
         db_table = '_user'
         ordering = ['-date_joined']
         
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(editable=False, primary_key=True)
     email = models.EmailField(unique=True)  
     role = models.ForeignKey(Role, verbose_name=("user role"), on_delete=models.CASCADE, related_name="users")
-    full_name = models.CharField(max_length=255, blank=True, null=True)
     is_logged_in = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Account Created At")
+    created_at = models.DateTimeField(editable=False, auto_now_add=True, verbose_name="Account Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated At")
     parent = models.ForeignKey("User", related_name="sub_users", on_delete=models.SET_NULL, null=True, blank=True)
     username = None  
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name"]
 
     def validate_email(self):
         if not self.email:
             raise ValidationError({"email": "Email is required."})
 
+        if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+                raise ValidationError({"email": "Email is already in use."})
+        
     def set_full_name_default(self):
         if not self.full_name:
             self.full_name = self.email.split("@")[0]
 
-    def split_full_name(self):
-        name_parts = self.full_name.split(" ", 1)
-        self.first_name = name_parts[0]
-        self.last_name = name_parts[1] if len(name_parts) > 1 else ""
-
     def hash_password_if_needed(self):
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
+    
+    def validate_role(self):
+        if self.role.name == "admin":
+            raise ValidationError({"role":"User cannot be assigned admin role."})
+        
+        if self.role.name and self.role.name not in Role.objects.values_list("name", flat=True):
+            raise ValidationError({"role":"Role does not exist."})
 
     def clean(self):
         super().clean()
         self.validate_email()
         self.set_full_name_default()
-        self.split_full_name()
         self.hash_password_if_needed()
+        self.validate_role()
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -57,3 +60,4 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"User: {self.email} ({self.role})"
+    

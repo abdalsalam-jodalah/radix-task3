@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger("models")
 class RolePermission(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(editable=False, primary_key=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
 

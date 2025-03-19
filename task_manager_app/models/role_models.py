@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger("models")
 class Role(models.Model):
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(editable=False, primary_key=True)
     name = models.CharField(max_length=50, unique=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

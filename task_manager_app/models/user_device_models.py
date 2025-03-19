@@ -16,8 +16,6 @@ class UserDevice(models.Model):
     is_active = models.BooleanField(default=True)
     login_time = models.DateTimeField(auto_now_add=True)
     logout_time = models.DateTimeField(null=True, blank=True)
-    device_name = models.CharField(max_length=255, blank=True, default="Unknown Device")
-    device_type = models.CharField(max_length=100, default="Unknown Type")
     device_token = models.CharField(
         max_length=255, 
         unique=True, 
@@ -25,12 +23,11 @@ class UserDevice(models.Model):
     )
 
     def __str__(self):
-        return f"{self.device_name} - {self.device_type} ({'Active' if self.is_active else 'Inactive'})"
+        return f"{self.device_token} ({'Active' if self.is_active else 'Inactive'})"
  
     def validate_device_token(self):
         if not self.device_token:
             raise ValidationError({"device_token":"Empty device token"})
-            self.device_token = get_random_string(64)
 
     def clean(self):
         super().clean()
@@ -38,5 +35,5 @@ class UserDevice(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        logger.info(f"Saving Device {self.device_name} ({self.device_type}) for user {self.user.email}")
+        logger.info(f"Saving Device {self.device_token}) for user {self.user.email}")
         super().save(*args, **kwargs)
