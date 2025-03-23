@@ -11,9 +11,12 @@ logger = logging.getLogger("components")
 class UserDeviceComponents:
     @staticmethod
     def generate_device_id(user_id, device_name, device_type, user_agent):
+        if not device_name or not device_type or not user_agent:
+            raise ValidationError({"error": "Device name, device type, and user agent are required."})
         separator = "::"
         raw_data = f"{user_id}{separator}{device_name}{separator}{device_type}{separator}{user_agent}"
-        # device_id = hashlib.sha256(raw_data.encode('utf-8')).hexdigest()
+        if not raw_data:
+            raise ValidationError({"error": "Device data is required."})
         return raw_data
 
     @staticmethod
@@ -83,8 +86,6 @@ class UserDeviceComponents:
     @staticmethod
     def logout_device(device):
         try:
-            device.is_active = False
-            device.logout_time = now()
             if isinstance(device, UserDevice):
                 UserDeviceRepository.set_device_attribute(device, 'is_active', False)
                 UserDeviceRepository.set_device_attribute(device, 'logout_time', now())

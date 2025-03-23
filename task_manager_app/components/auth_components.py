@@ -5,7 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-
+from ..repositories.user_repository import UserRepository
 from ..models.user_models import User
 from ..models.user_device_models import UserDevice
 from .user_components import UserComponents
@@ -16,7 +16,7 @@ from django.conf import settings
 
 class AuthComponents():
     @staticmethod
-    def fetch_user_data(request):
+    def fetch_login_data_from_req(request):
         if request is None:
             raise ValidationError({"error": "Request object is required."})
         
@@ -34,7 +34,7 @@ class AuthComponents():
         return {"email": email, "password": password}
   
     @staticmethod
-    def fetch_auth_header(request):
+    def fetch_auth_header_from_req(request):
         if request is None:
             raise ValidationError({"error": "Request object is required."})
         auth_header = request.headers.get("Authorization")
@@ -44,12 +44,12 @@ class AuthComponents():
 
 
     @staticmethod
-    def fetch_user_request(request):
+    def fetch_headers_from_req(request):
         if request is None:
             raise ValidationError({"error": "Request object is required."})
-        device_name = request.headers.get("Device-Name", "Unknown Device")
-        device_type = request.headers.get("Device-Type", "Unknown Device")
-        user_agent = request.headers.get("User-Agent", "Unknown User Agent")
+        device_name = request.headers.get("Device-Name")
+        device_type = request.headers.get("Device-Type")
+        user_agent = request.headers.get("User-Agent")
 
         if not device_name:
             raise ValidationError({"error": "device_name is required."})
@@ -85,17 +85,14 @@ class AuthComponents():
         device = UserDeviceComponents.fetch_device_by_user_and_token(user, device_token)
 
         status = UserDeviceComponents.authenticate_device(user, device)
-        # if status.get("status") == "exist_active":
-        #     raise ValidationError("This device is already registered and active.")
         UserDeviceComponents.logout_all_devices_for_user(user)
-
         UserDeviceComponents.register_device(user, device, device_token, status)
-     
         refresh_token = AuthComponents.create_token(user)
-        UserComponents.set_login_status(user, True) 
         if not refresh_token:
-            return None
+            raise ValidationError({"error": "making token failed"})
         
+        UserComponents.set_login_status(user, True) 
+
         return {
             "refresh_token": str(refresh_token), 
             "access_token":str(refresh_token.access_token)
@@ -105,12 +102,88 @@ class AuthComponents():
     def create_token(user):
         refresh = RefreshToken.for_user(user)
         if not refresh:
-           return Response({"error": "refresh token has problem "}, status=status.HTTP_226_IM_USED)
+           raise ValidationError({"error": "refresh token has problem "})
         return refresh
+    
+    @staticmethod
+    def fetch_token_from_req(request):
+        print(request.headers)
+        if not request:
+            raise ValidationError({"error": "Request object is required."})
+        try:
+            auth_header = AuthComponents.fetch_auth_header_from_req(request)
+        except Exception as e:
+            raise ValidationError({"error": f"Error fetching auth header. {e}"})
+        
+        if not auth_header:
+            raise ValidationError({"error": "Authorization header is required."})
+        
+        token_str = None
+
+        if auth_header.startswith("Bearer "):
+            parts = auth_header.split(" ")
+            if len(parts) >= 2:
+                token_str = parts[2]
+            else:
+                token_str = parts[1]
+        else:
+            token_str = auth_header
+        
+        if not token_str or token_str == "Bearer":
+            raise ValidationError({"error": "Token not found in header."})
+
+        token = AccessToken(token_str)
+        if not token:
+            raise ValidationError({"error": "Invalid access token."})
+        return token
+
+    @staticmethod
+    def extract_userid_from_token(token):
+        user_id = token.payload["user_id"]
+        if not user_id:
+            raise ValidationError({"error": "Invalid token. user id not found in token."})
+        return token.payload["user_id"]
+    
+
+    @staticmethod
+    def fetch_user_based_on_token(token):
+        user_id= AuthComponents.extract_userid_from_token(token)
+        if not user_id:
+            raise ValidationError({"error": "Invalid token. user id not found in token."})
+        user = UserComponents.get_user_by_id(user_id)
+        if not user:
+            return Response({"error": "Token not valid or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+        return user 
+    
+    @staticmethod
+    def fetch_user_from_req(request):
+        token = AuthComponents.fetch_token_from_req(request)
+        if not token: 
+            raise ValidationError({"error": "Token not valid"})
+        user = AuthComponents.fetch_user_based_on_token(token)
+        if not user: 
+            raise ValidationError({"error": "while fetching user,Token not valid or user not found."})
+        return user
+    
+    @staticmethod
+    def logout_user(user):
+        if not user or not isinstance(user, User):
+            raise ValidationError({"error": "User is required."})
+        UserRepository.set_user_attribute(user, 'is_logged_in', False)
+  
+    @staticmethod
+    def logout_token(token):
+        # TODO: implement this method, maybe block the token
+            #old:    # i think no need to distroy token since i made new  permission : IsSingleDevice, but i kept it ensure that 
+        pass
+    
+
+
+
 
     def get_user(request):
         try:
-            auth_header= AuthComponents.fetch_auth_header(request)
+            auth_header= AuthComponents.fetch_auth_header_from_req(request)
         except ValidationError as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -137,16 +210,8 @@ class AuthComponents():
 
 
     
-    def logout_token(token):
-        # i think no need to distroy token since i made new  permission : IsSingleDevice, but i kept it ensure that 
-        pass
+
     
-    def logout_user(user):
-        try:
-            user.is_logged_in = False
-            user.save()
-        except UserDevice.DoesNotExist:
-            raise ValidationError("User not found or already logged out.")
     def extract_token(auth_header):
         if not auth_header:
             return None
@@ -188,9 +253,4 @@ class AuthComponents():
         except jwt.InvalidTokenError as err:
             print(err)
             return None
-
-         
-
-
-
 
