@@ -7,7 +7,7 @@ from ..models.user_device_models import UserDevice
 from ..serializers.role_serializers import RoleSerializer
 from ..models.role_models import Role
 class UserSerializer(serializers.ModelSerializer):
-    devices = serializers.PrimaryKeyRelatedField(many=True, queryset=UserDevice.objects.all())
+    devices = serializers.PrimaryKeyRelatedField(many=True, queryset=UserDevice.objects.all(), required=False)
     role = serializers.SlugRelatedField(
         queryset=Role.objects.all(), slug_field="name"
     )
@@ -25,17 +25,16 @@ class UserSerializer(serializers.ModelSerializer):
             "updated_at",
             "parent",
             "devices",
-
         ]
         extra_kwargs = {
             "email":     {"required": True},
             "password":  {"required": True, "write_only": True},
             "first_name": {"required": True},
             "last_name": {"required": True},
-            "is_logged_in": {"read_only": True},
-            "updated_at": {"read_only": True},
-            "created_at": {"read_only": True},
-            "devices":{"read_only": True},
+            "is_logged_in": {"required": False,"read_only": True},
+            "updated_at": {"required": False,"read_only": True},
+            "created_at": {"required": False,"read_only": True},
+            "devices":{"required": False,"read_only": True},
         }
 
     def validate_email(self, value):

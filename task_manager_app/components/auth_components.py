@@ -32,6 +32,34 @@ class AuthComponents():
         if not password:
             raise ValidationError({"error": "Password is required."})
         return {"email": email, "password": password}
+    
+    @staticmethod
+    def fetch_signup_data_from_req(request):
+        if request is None:
+            raise ValidationError({"error": "Request object is required."})
+        
+        try:
+            body_data = json.loads(request.body.decode('utf-8'))
+        except json.JSONDecodeError as e:
+            body_data = {}
+
+        email = body_data.get("email")
+        password = body_data.get("password")
+        first_name = body_data.get("first_name")
+        last_name = body_data.get("last_name")
+        if not email:
+            raise ValidationError({"error": "Email is required."})
+        if not password:
+            raise ValidationError({"error": "Password is required."})
+        if not first_name:
+            raise ValidationError({"error": "first_name is required."})
+        if not last_name:
+            raise ValidationError({"error": "last_name is required."})
+                
+        return {"email": email, 
+                "password": password,
+                "first_name": first_name,
+                "last_name": last_name}
   
     @staticmethod
     def fetch_auth_header_from_req(request):

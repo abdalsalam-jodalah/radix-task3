@@ -14,15 +14,13 @@ from ..components.role_permission_components import RolePermissionComponent
 logger = logging.getLogger("controllers")
 from ..components.auth_components import AuthComponents
 from ..models.user_models import User
+from ..constants.role_constants import RoleChoices
+from django.core.exceptions import ValidationError
 
 class UserApi(APIView):
-    """
-    Handles CRUD operations for User.
-    """
     pagination_class = CustomPagination
 
     def get_permissions(self):
-        """Return the permissions for the current request."""
         if self.request.method == 'POST':
             return [] 
         else:
@@ -57,23 +55,23 @@ class UserApi(APIView):
             return Response({"error": f"Error: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
     def post(self, request):
-        logger.debug(SharedComponents.get_log_message("UserApi", "POST", request.user, None, "User", "Creating new user"))
-        subject_user = AuthComponents.get_user(request)
-        # if subject_user:
-        #     return Response({"error": f"USER ALLREADY EXIST {subject_user}"}, status=status.HTTP_400_BAD_REQUEST)
-        subject_user.role=1   
-        serializer = UserSerializer(data=request.data)
-
-        if serializer.is_valid():
-            # user= RolePermissionComponent.handle_action( "user", "post",request.data)
-            user= RolePermissionComponent.handle_action(subject_user, "user", "post",request.data)
-
-            if user:
-                logger.info(SharedComponents.get_log_message("UserApi", "POST", request.user, user.id, "User", "User created successfully"))
-                return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
-            
-        logger.error(SharedComponents.get_log_message("UserApi", "POST", request.user, None, "User", f"Validation error: {serializer.errors}"))
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            signup_data = AuthComponents.fetch_signup_data_from_req(request)
+            signup_data.update({"role": RoleChoices.SUB_USER.value})
+            UserComponents.validate_existing_user(signup_data)
+            # user = RolePermissionComponent.handle_action(signup_data, "user", "post", request.data)
+            # TODO: Fix the dispatcher since it take user object , but here we have data and want to make user obj
+            user = UserComponents.create_user(signup_data)
+            return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, id=None):
         """Update an existing user"""

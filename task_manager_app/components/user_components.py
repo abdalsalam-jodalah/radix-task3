@@ -3,6 +3,7 @@ from ..models.user_models import User
 from ..repositories.user_repository import UserRepository
 from ..models.role_models import Role
 import logging
+from ..serializers.user_serializers import UserSerializer
 
 logger = logging.getLogger("components")
 
@@ -40,12 +41,11 @@ class UserComponents:
     @staticmethod
     def create_user(user_data):
         try:
-            try:
-                default_role = Role.objects.get(id=4)
-            except Role.DoesNotExist:
-                raise ValidationError({"error": "Default role not found!"})
-            user_data["role"] = default_role
-            return UserRepository.create_user(user_data)
+            serializer = UserSerializer(data=user_data)
+            if serializer.is_valid(raise_exception=True):
+                new_user = serializer.save()
+                return new_user
+            return UserRepository.create_user(user_data)#not reached after adding serializer
         except Exception as e:
             logger.error(f"Error in create_user: {e}")
             raise e
@@ -58,7 +58,15 @@ class UserComponents:
         except Exception as e:
             logger.error(f"Error in update_user for user id {user_id}: {e}")
             raise e
-
+    @staticmethod
+    def validate_existing_user(signup_data):
+        try:
+            user = UserComponents.get_user_by_email(signup_data["email"])
+            if user is not None:
+                raise ValidationError({"error": "User with this email already exists!"})
+        except ValidationError as e: # in case not found, its new user
+            return None
+        
     @staticmethod
     def get_user_from_users(users, user_id):
         try:
