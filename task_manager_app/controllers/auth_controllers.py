@@ -3,6 +3,10 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
+from django.core.exceptions import ValidationError
+
+from task_manager_app.models.user_models import User
+from rest_framework.exceptions import AuthenticationFailed
 
 from ..permissions.user_permissions import IsSingleDevice
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
@@ -12,7 +16,7 @@ from ..components.user_components import UserComponents
 from ..components.user_device_components import UserDeviceComponents 
 from ..serializers.user_serializers import UserSerializer 
 import logging 
-logger = logging.getLogger("views")
+logger = logging.getLogger("controllers")
 
 class AuthApi(APIView):
     def get_permissions(self):
@@ -31,55 +35,38 @@ class AuthApi(APIView):
         return self.login(request, *args, **kwargs)
     
     def login(self, request, *args, **kwargs):
-        """Handles user login."""
         try:
             request_data = AuthComponents.fetch_user_request(request)
-            request_data.update(AuthComponents.fetch_user_data(request))
-            required_fields = ["email", "password", "device_name", "device_type", "user_agent"]
-            if not all(request_data.get(field) for field in required_fields):
-                logger.warning(SharedComponents.get_log_message(
-                    "AuthApi", "POST", None, additional_info="Missing required fields"
-                ))
-                return Response({"error": "Missing required fields in request."}, status=status.HTTP_400_BAD_REQUEST)
+            user_data = AuthComponents.fetch_user_data(request)
+            request_data.update(user_data)
 
             user = AuthComponents.authenticate_user(email=request_data["email"], password=request_data["password"])
-            if not user:
-                logger.warning(SharedComponents.get_log_message(
-                    "AuthApi", "POST", None, additional_info="Invalid login attempt"
-                ))
+            if not user or not isinstance(user, User):
                 return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
 
-            data = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
-            if isinstance(data, Response):
-                return data
-            
-            if not data or "refresh" not in data or "access_token" not in data:
-                logger.error(SharedComponents.get_log_message(
-                    "AuthApi", "POST", data, additional_info="Token generation failed"
-                ))
+            tokens = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
 
-                return Response({"error": "Error signing user, invalid token."}, status=status.HTTP_400_BAD_REQUEST)
-
-            logger.info(SharedComponents.get_log_message(
-                "AuthApi", "POST", user, additional_info="User logged in successfully"
-            ))
-
+            if not tokens or "refresh_token" not in tokens or "access_token" not in tokens:
+                return Response({"error": "Error signing user, invalid tokenization."}, status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
                 'message': 'Login successful!',
-                'access_token': data["access_token"],
-                'refresh_token': str(data["refresh"]),
+                'access_token': tokens["access_token"],
+                'refresh_token': tokens["refresh_token"],
                 'user': UserSerializer(user).data
             }, status=status.HTTP_200_OK)
-        
+
+                    
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except AttributeError as err:
-            logger.error(SharedComponents.get_log_message(
-                    "AuthApi", "POST", None, additional_info=f"Error during login: {str(err)}"
-            ))
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(str(e))  
-            return Response({"error": "An unexpected error occurred."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
