@@ -22,7 +22,9 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated At")
     parent = models.ForeignKey("User", related_name="sub_users", on_delete=models.SET_NULL, null=True, blank=True)
     username = None  
+    last_login = None
     USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
 
     def validate_email(self):
         if not self.email:
@@ -31,17 +33,14 @@ class User(AbstractUser):
         if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
                 raise ValidationError({"email": "Email is already in use."})
         
-    def set_full_name_default(self):
-        if not self.full_name:
-            self.full_name = self.email.split("@")[0]
 
     def hash_password_if_needed(self):
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
     
     def validate_role(self):
-        if self.role.name == "admin":
-            raise ValidationError({"role":"User cannot be assigned admin role."})
+        # if self.role.name == "admin":
+        #     raise ValidationError({"role":"User cannot be assigned admin role."})
         
         if self.role.name and self.role.name not in Role.objects.values_list("name", flat=True):
             raise ValidationError({"role":"Role does not exist."})
@@ -49,7 +48,6 @@ class User(AbstractUser):
     def clean(self):
         super().clean()
         self.validate_email()
-        self.set_full_name_default()
         self.hash_password_if_needed()
         self.validate_role()
 

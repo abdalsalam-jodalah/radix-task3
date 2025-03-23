@@ -19,7 +19,7 @@ from ..models.task_models import Task
 from ..components.role_permission_components import RolePermissionComponent
 
 import logging 
-logger = logging.getLogger("views")
+logger = logging.getLogger("controllers")
 
 class TaskApi(APIView):
     authentication_classes = []

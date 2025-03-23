@@ -141,6 +141,7 @@ MIDDLEWARE = [
     'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
         "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "task_manager_app.middlewares.log_middleware.RequestResponseLoggingMiddleware"
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -249,10 +250,10 @@ LOGGING = {
         "level": "DEBUG",  # Change to DEBUG to capture all logs
     },      
     "handlers": {
-        "views": {
+        "controllers": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "views.log"),
+            "filename": os.path.join(LOG_DIR, "controllers.log"),
             "formatter": "detailed",
         },
         "serializers": {
@@ -285,15 +286,26 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "repositories.log"),
             "formatter": "detailed",
         },
+        "components": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "components.log"),
+            "formatter": "detailed",
+        },
     },
    "loggers": {
-        "views": {"handlers": ["views"], "level": "DEBUG", "propagate": True},
+        "controllers": {"handlers": ["controllers"], "level": "DEBUG", "propagate": True},
         "serializers": {"handlers": ["serializers"], "level": "DEBUG", "propagate": True},
         "models": {"handlers": ["models"], "level": "DEBUG", "propagate": True},
         "requests": {"handlers": ["requests"], "level": "INFO", "propagate": True},
         "django": {"handlers": ["server"], "level": "INFO", "propagate": True},
-          "repositories": {  
+        "repositories": {  
             "handlers": ["repositories"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "components": {  
+            "handlers": ["components"],
             "level": "INFO",
             "propagate": True,
         },

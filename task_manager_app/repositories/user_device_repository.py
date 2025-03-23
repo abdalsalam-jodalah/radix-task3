@@ -52,6 +52,7 @@ class UserDeviceRepository:
                 login_time=login_time,
                 logout_time=logout_time
             )
+            
             return device
         except Exception as e:
             logger.error(f"create_device failed for user id {user.id}: {e}")

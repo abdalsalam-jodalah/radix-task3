@@ -13,7 +13,7 @@ from ..components.role_permission_components import RolePermissionComponent
 from ..pagination import CustomPagination
 
 import logging 
-logger = logging.getLogger("views")
+logger = logging.getLogger("controllers")
 
 class RoleApi(APIView):
     authentication_classes = []

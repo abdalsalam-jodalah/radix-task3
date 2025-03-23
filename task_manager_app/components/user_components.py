@@ -2,89 +2,168 @@ from django.core.exceptions import ValidationError
 from ..models.user_models import User
 from ..repositories.user_repository import UserRepository
 from ..models.role_models import Role
+import logging
+
+logger = logging.getLogger("components")
 
 class UserComponents:
+    @staticmethod
     def get_all_users():
-        return UserRepository.fetch_all_users()
+        try:
+            return UserRepository.fetch_all_users()
+        except Exception as e:
+            logger.error(f"Error in get_all_users: {e}")
+            raise Exception({"error": f"Error in get_all_users: {e}"})
 
+    @staticmethod
     def get_user_by_id(user_id):
         try:
-            return UserRepository.fetch_user_by_id(user_id)
-        except User.DoesNotExist:
-            raise ValidationError("User not found!")
-        
+            user = UserRepository.fetch_user_by_id(user_id)
+            if user is None:
+                raise ValidationError({"error": "User not found!"})
+            return user
+        except Exception as e:
+            logger.error(f"Error in get_user_by_id for id {user_id}: {e}")
+            raise e
+
+    @staticmethod
     def get_user_by_email(email):
         try:
-            return UserRepository.fetch_user_by_email(email)
-        except User.DoesNotExist:
-            raise ValidationError("User not found!")
+            user = UserRepository.fetch_user_by_email(email)
+            if user is None:
+                raise ValidationError({"error": "User not found!"})
+            return user
+        except Exception as e:
+            logger.error(f"Error in get_user_by_email for email {email}: {e}")
+            raise e
 
+    @staticmethod
     def create_user(user_data):
-        user_data["role"] = Role.objects.get(id=4)
-        return UserRepository.create_user(user_data)
-        
-    def update_user(user_data,id):
-        user = UserComponents.get_user_by_id(id)
-        return UserRepository.update_user(user, user_data)
+        try:
+            try:
+                default_role = Role.objects.get(id=4)
+            except Role.DoesNotExist:
+                raise ValidationError({"error": "Default role not found!"})
+            user_data["role"] = default_role
+            return UserRepository.create_user(user_data)
+        except Exception as e:
+            logger.error(f"Error in create_user: {e}")
+            raise e
 
-    def get_user_form_users(users, id):
-        for user in users:
-            if isinstance(user, dict) and user.get("id") == id:
-                return user, {"message": "User found", "User": user}
-            elif hasattr(user, "id") and user.id == id:
-                return user, {"message": "User found", "User": user}
-        return None, {"message": "User not found", "User": None}
-    
-    def assign_role():
-        pass 
-    
-    def assign_parent():
-        pass
+    @staticmethod
+    def update_user(user_data, user_id):
+        try:
+            user = UserComponents.get_user_by_id(user_id)
+            return UserRepository.update_user(user, user_data)
+        except Exception as e:
+            logger.error(f"Error in update_user for user id {user_id}: {e}")
+            raise e
 
+    @staticmethod
+    def get_user_from_users(users, user_id):
+        try:
+            for user in users:
+                if isinstance(user, dict) and user.get("id") == user_id:
+                    return user, {"message": "User found", "User": user}
+                elif hasattr(user, "id") and user.id == user_id:
+                    return user, {"message": "User found", "User": user}
+            return None, {"message": "User not found", "User": None}
+        except Exception as e:
+            logger.error(f"Error in get_user_from_users: {e}")
+            raise e
+
+    @staticmethod
+    def assign_role(user_id, role_id):
+        try:
+            user = UserComponents.get_user_by_id(user_id)
+            role = Role.objects.get(id=role_id)
+            return UserRepository.update_user(user, {"role": role.id})
+        except Exception as e:
+            logger.error(f"Error in assign_role for user id {user_id} and role id {role_id}: {e}")
+            raise e
+
+    @staticmethod
+    def assign_parent(user_id, parent_id):
+        try:
+            user = UserComponents.get_user_by_id(user_id)
+            parent = UserComponents.get_user_by_id(parent_id)
+            if parent is None:
+                raise ValidationError({"error": "Parent user not found!"})
+            return UserRepository.update_user(user, {"parent": parent.id})
+        except Exception as e:
+            logger.error(f"Error in assign_parent for user id {user_id} with parent id {parent_id}: {e}")
+            raise e
+
+    @staticmethod
     def get_own(user):
-    
-        return UserRepository.fetch_user_by_id(user.id)
+        try:
+            return UserRepository.fetch_user_by_id(user.id)
+        except Exception as e:
+            logger.error(f"Error in get_own for user id {user.id}: {e}")
+            raise e
 
+    @staticmethod
     def get_children(user):
-        immediate_children = list(UserRepository.fetch_children(user))
-    
-        all_children = immediate_children.copy()
+        try:
+            immediate_children = list(UserRepository.fetch_children(user))
+            all_children = immediate_children.copy()
+            for child in immediate_children:
+                all_children.extend(UserComponents.get_children(child))
+            return all_children
+        except Exception as e:
+            logger.error(f"Error in get_children for user id {user.id}: {e}")
+            raise e
 
-        for child in immediate_children:
-            all_children.extend(UserComponents.get_children(child))
-        return all_children
-
+    @staticmethod
     def get_own_below(user):
-    
-        own = UserComponents.get_own(user)
-    
-        descendants = UserComponents.get_children(own.first())
-    
-        return [own.first()] + descendants
+        try:
+            own = UserComponents.get_own(user)
+            descendants = UserComponents.get_children(own)
+            return [own] + descendants
+        except Exception as e:
+            logger.error(f"Error in get_own_below for user id {user.id}: {e}")
+            raise e
 
+    @staticmethod
     def put_own(user, data, pk):
-        if user.id != pk:
-            raise ValidationError("You can only update your own profile.")
-        user_instance = UserComponents.get_user_by_id(pk)
-        return UserRepository.update_user(user_instance, data)
-
-    def put_own_below(user, data, pk):
-        if user.id == pk:
-            return UserComponents.put_own(user, data, pk)
-        
-        descendants = UserComponents.get_own_below(user)
-        if any(descendant.id == pk for descendant in descendants):
+        try:
+            if user.id != pk:
+                raise ValidationError({"error": "You can only update your own profile."})
             user_instance = UserComponents.get_user_by_id(pk)
             return UserRepository.update_user(user_instance, data)
-        else:
-            raise ValidationError("You are not authorized to update this record.")
+        except Exception as e:
+            logger.error(f"Error in put_own for user id {pk}: {e}")
+            raise e
 
+    @staticmethod
+    def put_own_below(user, data, pk):
+        try:
+            if user.id == pk:
+                return UserComponents.put_own(user, data, pk)
+            descendants = UserComponents.get_own_below(user)
+            if any(descendant.id == pk for descendant in descendants):
+                user_instance = UserComponents.get_user_by_id(pk)
+                return UserRepository.update_user(user_instance, data)
+            else:
+                raise ValidationError({"error": "You are not authorized to update this record."})
+        except Exception as e:
+            logger.error(f"Error in put_own_below for user id {pk}: {e}")
+            raise e
+
+    @staticmethod
     def delete_user(user_id):
-        user = UserComponents.get_user_by_id(user_id)
-        return UserRepository.delete_user(user)
-    
+        try:
+            user = UserComponents.get_user_by_id(user_id)
+            return UserRepository.delete_user(user)
+        except Exception as e:
+            logger.error(f"Error in delete_user for user id {user_id}: {e}")
+            raise e
+
     def set_login_status(self, status: bool):
-        self.is_logged_in = status
-        self.save()
-        # logger.info(f"User {self.email} login status updated to {status}")
-# can u remove the aincdexu of tetstcuin 
+        try:
+            self.is_logged_in = status
+            self.save()
+            return self
+        except Exception as e:
+            logger.error(f"Error in set_login_status for user id {self.id}: {e}")
+            raise Exception({"error": f"Error in set_login_status for user id {self.id}: {e}"})

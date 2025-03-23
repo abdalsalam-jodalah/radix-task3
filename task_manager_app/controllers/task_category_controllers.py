@@ -8,7 +8,7 @@ from ..serializers.task_category_serializers import TaskCategorySerializer
 from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 
 import logging
-logger = logging.getLogger("views")
+logger = logging.getLogger("controllers")
 
 class TaskCategoryApi(APIView):
     permission_classes = [ IsSingleDevice]
