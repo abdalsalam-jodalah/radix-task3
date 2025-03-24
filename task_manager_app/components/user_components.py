@@ -13,10 +13,12 @@ class UserComponents:
         try:
             users = UserRepository.fetch_all_users()
             if not users:
+                return []
                 raise ValidationError({"error": f"Error in get_all_users: {e}"})
             return users
         except Exception as e:
             logger.error(f"Error in get_all_users: {e}")
+            raise e
             raise Exception({"error": f"Error in get_all_users: {e}"})
 
     @staticmethod
@@ -86,7 +88,7 @@ class UserComponents:
                     return user
                 elif hasattr(user, "id") and user.id == user_id:
                     return user
-            return None
+            raise ValidationError({"error": "User not found!, or u don't have permission to access"})
         except Exception as e:
             logger.error(f"Error in get_user_from_users: {e}")
             raise e

@@ -16,6 +16,7 @@ from ..components.auth_components import AuthComponents
 from ..models.user_models import User
 from ..constants.role_constants import RoleChoices
 from django.core.exceptions import ValidationError
+from rest_framework.exceptions import AuthenticationFailed
 
 class UserApi(APIView):
     pagination_class = CustomPagination
@@ -33,13 +34,11 @@ class UserApi(APIView):
         try:
             subject_user = AuthComponents.fetch_user_from_req(request)
             users = RolePermissionComponent.handle_action(subject_user, "user", "get")
-
+            if not users:
+                return Response(users, status=status.HTTP_200_OK)
+            
             if id:
-                if not isinstance(id,int):
-                    return Response({"error": "User not found!, or don't You have permissions"}, status=status.HTTP_404_NOT_FOUND) 
                 user= UserComponents.get_user_from_users(users, id)
-                if not user:
-                    return Response({"error": "User not found!, or don't You have permissions"}, status=status.HTTP_404_NOT_FOUND)   
                 return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
 
             paginator = CustomPagination()
@@ -48,7 +47,7 @@ class UserApi(APIView):
             return response
             
         except ValueError:
-            raise ValidationError("The provided id must be an integer.")
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except NotAcceptable as err:
             return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except User.DoesNotExist as ert:
@@ -56,6 +55,8 @@ class UserApi(APIView):
         except ValidationError as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -70,11 +71,17 @@ class UserApi(APIView):
             user = UserComponents.create_user(signup_data)
             return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
         
+        except ValueError:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except User.DoesNotExist as ert:
             return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -90,7 +97,7 @@ class UserApi(APIView):
             return Response(UserSerializer(result).data, status=status.HTTP_200_OK)
         
         except ValueError:
-            raise ValidationError("The provided id must be an integer.")
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except NotAcceptable as err:
             return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except User.DoesNotExist as ert:
@@ -98,6 +105,8 @@ class UserApi(APIView):
         except ValidationError as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
@@ -115,7 +124,7 @@ class UserApi(APIView):
             return Response({"message": "User deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
         
         except ValueError:
-            raise ValidationError("The provided id must be an integer.")
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except NotAcceptable as err:
             return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except User.DoesNotExist as ert:
@@ -123,6 +132,8 @@ class UserApi(APIView):
         except ValidationError as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)

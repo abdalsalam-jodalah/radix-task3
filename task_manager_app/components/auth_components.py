@@ -171,7 +171,6 @@ class AuthComponents():
             raise ValidationError({"error": "Invalid token. user id not found in token."})
         return token.payload["user_id"]
     
-
     @staticmethod
     def fetch_user_based_on_token(token):
         user_id= AuthComponents.extract_userid_from_token(token)
