@@ -105,18 +105,24 @@ class UserApi(APIView):
     def patch(self, request, id=None):
         return self.put(request,id)
 
-    def delete(self, request, user_id):
-        """Delete a user"""
-        logger.debug(SharedComponents.get_log_message("UserApi", "DELETE", request.user, user_id, "User", "Deleting user"))
-        subject_user = AuthComponents.get_user(request)
-        if not subject_user or not isinstance(subject_user, User):
-            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        user = UserComponents.get_user_by_id(user_id)
-        if not user:
-            logger.warning(SharedComponents.get_log_message("UserApi", "DELETE", request.user, user_id, "User", "User not found"))
-            return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+    def delete(self, request, id=None):
+        try:
+            user_id =id
+            if user_id == None:
+                return Response({"error": "Missing user id, not found."}, status=status.HTTP_400_BAD_REQUEST)
+            subject_user = AuthComponents.fetch_user_from_req(request)
+            RolePermissionComponent.handle_action(subject_user, "user", "delete", pk=user_id)
+            return Response({"message": "User deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
         
-        user.delete()
-        logger.info(SharedComponents.get_log_message("UserApi", "DELETE", request.user, user_id, "User", "User deleted successfully"))
-        return Response({"message": "User deleted successfully!"}, status=status.HTTP_204_NO_CONTENT)
+        except ValueError:
+            raise ValidationError("The provided id must be an integer.")
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)

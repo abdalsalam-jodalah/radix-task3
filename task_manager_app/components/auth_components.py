@@ -135,7 +135,6 @@ class AuthComponents():
     
     @staticmethod
     def fetch_token_from_req(request):
-        print(request.headers)
         if not request:
             raise ValidationError({"error": "Request object is required."})
         try:
@@ -258,7 +257,6 @@ class AuthComponents():
             token = AccessToken(token_str)
             return token
         except Exception as err:
-            print(err)
             return None
 
 
@@ -279,6 +277,5 @@ class AuthComponents():
             decoded = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
             return decoded
         except jwt.InvalidTokenError as err:
-            print(err)
             return None
 
