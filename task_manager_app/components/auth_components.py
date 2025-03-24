@@ -189,7 +189,7 @@ class AuthComponents():
         if not token: 
             raise ValidationError({"error": "Token not valid"})
         user = AuthComponents.fetch_user_based_on_token(token)
-        if not user: 
+        if not user or not isinstance(user, User): 
             raise ValidationError({"error": "while fetching user,Token not valid or user not found."})
         return user
     

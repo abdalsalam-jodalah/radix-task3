@@ -11,7 +11,10 @@ class UserComponents:
     @staticmethod
     def get_all_users():
         try:
-            return UserRepository.fetch_all_users()
+            users = UserRepository.fetch_all_users()
+            if not users:
+                raise ValidationError({"error": f"Error in get_all_users: {e}"})
+            return users
         except Exception as e:
             logger.error(f"Error in get_all_users: {e}")
             raise Exception({"error": f"Error in get_all_users: {e}"})
@@ -71,11 +74,13 @@ class UserComponents:
     def get_user_from_users(users, user_id):
         try:
             for user in users:
-                if isinstance(user, dict) and user.get("id") == user_id:
-                    return user, {"message": "User found", "User": user}
+                if isinstance(user, User) and user.id == user_id:
+                    return user
+                elif isinstance(user, dict) and user.get("id") == user_id:
+                    return user
                 elif hasattr(user, "id") and user.id == user_id:
-                    return user, {"message": "User found", "User": user}
-            return None, {"message": "User not found", "User": None}
+                    return user
+            return None
         except Exception as e:
             logger.error(f"Error in get_user_from_users: {e}")
             raise e
@@ -105,7 +110,10 @@ class UserComponents:
     @staticmethod
     def get_own(user):
         try:
-            return UserRepository.fetch_user_by_id(user.id)
+            user = UserRepository.fetch_user_by_id(user.id)
+            if not user:
+                raise ValidationError({"error": "User not found!"})
+            return [user]
         except Exception as e:
             logger.error(f"Error in get_own for user id {user.id}: {e}")
             raise e
@@ -127,7 +135,10 @@ class UserComponents:
         try:
             own = UserComponents.get_own(user)
             descendants = UserComponents.get_children(own)
-            return [own] + descendants
+            users = [own] + descendants
+            if not users:
+                raise ValidationError({"error": "No users found!"})
+            return users
         except Exception as e:
             logger.error(f"Error in get_own_below for user id {user.id}: {e}")
             raise e
