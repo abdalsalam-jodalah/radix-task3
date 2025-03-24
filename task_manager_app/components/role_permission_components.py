@@ -214,16 +214,10 @@ class RolePermissionComponent:
                 "put": dispatcher.put,
                 "delete": dispatcher.delete,
             }
-            print(action_methods, user, model, action, access_level,)
             if action in action_methods:
                 method = action_methods[action]
-                print("111111111")
-                print (user, model, access_level, data, pk)
-                print(f"data{data}, pk {pk}")
                 return method(user, model, access_level, data, pk)
-                print("22222222")
             else:
-                print("333333333")
                 return "Invalid action"
         except Exception as err:
             logger.error(f"RolePermissionComponent.dispatch error: {err}")

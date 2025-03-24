@@ -9,8 +9,96 @@ from ..serializers.task_serializers import TaskSerializer
 from ..repositories.task_repository import TaskRepository
 from ..components.shared_components import SharedComponents as SC
 from ..models.task_models import Task
+import logging
+from django.core.exceptions import ValidationError
+
+logger = logging.getLogger("components")
 
 class TaskComponents:
+    @staticmethod
+    def get_all_tasks():
+        try:
+            tasks = TaskRepository.get_all_tasks()
+            if not tasks:
+                return []
+            return tasks
+        except Exception as e:
+            logger.error(f"Error in get_all_tasks: {e}")
+            raise e
+        
+    @staticmethod       
+    def get_all_and_below_tasks_assigned_for_user(user):
+        try:
+            assigned_tasks = TaskRepository.get_tasks_for_user(user)  
+            assigned_by_user_tasks = TaskRepository.get_tasks_by_user(user) 
+            all_tasks = list(assigned_tasks) + list(assigned_by_user_tasks)
+            if not all_tasks:
+                return []
+            return all_tasks 
+        except Exception as e:
+            logger.error(f"Error in get_all_and_below_tasks_assigned_for_user: {e}")
+            raise e
+        
+    @staticmethod
+    def get_all_tasks_assigned_for_user (user, filters=None, search_query=None):
+        try:
+            tasks = TaskRepository.get_tasks_for_user(user)
+            if not tasks:
+                return []
+            return tasks 
+        except Exception as e:
+            logger.error(f"Error in get_all_tasks_assigned_for_user: {e}")
+            raise e
+        
+    @staticmethod
+    def get_task_from_tasks(tasks, pk):
+        try:
+            for task in tasks:
+                if isinstance(task, Task) and task.id == pk:
+                    return task
+                if isinstance(task, dict) and task.get("id") == pk:
+                    return task
+                elif hasattr(task, "id") and task.id == pk:
+                    return task
+            raise ValidationError({"error": "Task not found!"})
+        except Exception as e:
+            logger.error(f"Error in get_task_from_tasks: {e}")
+            raise e
+        
+    @staticmethod    
+    def get_tasks_filtered(tasks, filters=None, search_query=None):
+        try:
+            if search_query:
+                tasks = tasks.filter(
+                    Q(title__icontains=search_query) |
+                    Q(description__icontains=search_query)
+                )
+            
+            if filters:
+                if 'priority' in filters and filters['priority']:
+                    tasks = tasks.filter(priority=filters['priority'])
+                
+                if 'status' in filters and filters['status']:
+                    tasks = tasks.filter(status=filters['status'])
+
+                if 'category' in filters and filters['category']:
+                    tasks = tasks.filter(category=filters['category'] )
+               
+                #due_date 
+                if ('start_date' in filters and 'end_date' in filters and
+                filters['start_date'] and filters['end_date']):
+                    try:
+                        start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
+                        end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
+                        tasks = tasks.filter(due_date__range=(start_date, end_date))
+                    except ValueError:
+                        pass
+
+            return tasks   
+        except Exception as e:
+            logger.error(f"Error in get_task_from_tasks: {e}")
+            raise e
+        
     def get_task_response(user, pk):
         task = TaskRepository.get_task_by_id(pk)
         if not task and not isinstance(task, Task):
@@ -22,14 +110,6 @@ class TaskComponents:
             raise PermissionDenied("You can only view your own tasks.")
         return task, serializer.data, 200
         
-    def get_task_from_tasks(tasks, pk):
-        for task in tasks:
-            if isinstance(task, dict) and task.get("id") == pk:
-                return task, {"message": "Task found", "task": task}, status.HTTP_200_OK
-            elif hasattr(task, "id") and task.id == pk:
-                return task, {"message": "Task found", "task": task}, status.HTTP_404_NOT_FOUND
-
-        return None, {"message": "Task not found", "task": None}, status.HTTP_404_NOT_FOUND
 
     def create_task(user, data):
         serializer = TaskSerializer(data=data)
@@ -75,9 +155,7 @@ class TaskComponents:
     
     def partial_update_task(user, pk, data):
         pass
-    def get_all_tasks():
-        return TaskRepository.get_all_tasks()
-        
+
     def get_tasks_assigned_by_user(user, filters=None, search_query=None):
         tasks = TaskRepository.get_tasks_by_user(user).order_by('-created_at')
         if not tasks:
@@ -92,45 +170,9 @@ class TaskComponents:
         filterd_tasks, error = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
         return filterd_tasks
     
-    def get_all_tasks_assigned_for_user (user, filters=None, search_query=None):
-        tasks = TaskRepository.get_tasks_for_user(user).order_by('-created_at')
-        if not tasks:
-            return None, {"detail": "Tasks not found fro this user"}
-        return tasks
-    def get_all_and_below_tasks_assigned_for_user(user):
 
-        assigned_tasks = TaskRepository.get_tasks_for_user(user)  
-        assigned_by_user_tasks = TaskRepository.get_tasks_by_user(user) 
-        all_tasks = list(assigned_tasks.order_by('-created_at')) + list(assigned_by_user_tasks.order_by('-created_at'))
 
-        return all_tasks if all_tasks else None
 
-    def get_tasks_filtered(tasks, filters=None, search_query=None):
-        if search_query:
-            tasks = tasks.filter(
-                Q(title__icontains=search_query) |
-                Q(description__icontains=search_query)
-            )
-        
-        if filters:
-            if 'priority' in filters and filters['priority']:
-                tasks = tasks.filter(priority=filters['priority'])
-            
-            if 'status' in filters and filters['status']:
-                tasks = tasks.filter(status=filters['status'])
-
-            if 'category' in filters and filters['category']:
-                tasks = tasks.filter(category=filters['category'] )
-
-            # if 'start_date' in filters and 'end_date' in filters and filters['start_date'] and filters['end_date']:
-            #     try:
-            #         start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
-            #         end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
-            #         tasks = tasks.filter(created_at__range=(start_date, end_date))
-            #     except ValueError:
-            #         pass  
-
-        return tasks, None
     
     def _handle_create_task( user, data):
         

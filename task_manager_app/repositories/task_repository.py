@@ -25,7 +25,7 @@ class TaskRepository:
     @staticmethod
     def get_tasks_by_user(user):
         try:
-            tasks = list(Task.objects.filter(assigner=user))
+            tasks = list(Task.objects.filter(assigner=user).order_by('-created_at'))
             return tasks
         except Exception as e:
             logger.error(f"get_tasks_by_user failed for assigner {user.id}: {e}")
@@ -34,7 +34,7 @@ class TaskRepository:
     @staticmethod
     def get_tasks_for_user(user):
         try:
-            tasks = list(Task.objects.filter(assignee=user))
+            tasks = list(Task.objects.filter(assignee=user).order_by('-created_at'))
             return tasks
         except Exception as e:
             logger.error(f"get_tasks_for_user failed for assignee {user.id}: {e}")
