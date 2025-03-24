@@ -1,6 +1,7 @@
 from ..models.user_models import User
 from ..models.role_models import Role
 import logging
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger("repositories")
 
@@ -74,6 +75,8 @@ class UserRepository:
                     value = Role.objects.get(id=int(value))
                 if field == "parent":
                     value = User.objects.get(id=int(value))
+                if field == "email" and user.email != user_data["email"]:
+                    raise ValidationError({"email": "Email cannot be changed."})
                 setattr(user, field, value)
             user.save()
             return user

@@ -54,13 +54,19 @@ class UserComponents:
             raise e
 
     @staticmethod
-    def update_user(user_data, user_id):
+    def update_user(subject_user, user_data, user_id):
         try:
+            if subject_user.role.name != "admin":
+                user_data.pop("role", None)
+                user_data.pop("parent", None)
+            if subject_user.id != user_id:
+                user_data.pop("password", None)
             user = UserComponents.get_user_by_id(user_id)
             return UserRepository.update_user(user, user_data)
         except Exception as e:
             logger.error(f"Error in update_user for user id {user_id}: {e}")
             raise e
+    
     @staticmethod
     def validate_existing_user(signup_data):
         try:

@@ -79,36 +79,20 @@ class UserApi(APIView):
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, id):
+    def put(self, request, id=None):
         try:
             user_id =id
             if user_id == None:
                 return Response({"error": "Missing user id, not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
-            subject_user = AuthComponents.get_user(request)
-            if not subject_user or not isinstance(subject_user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-                
-            # user_to_edit = UserComponents.get_user_by_id(user_id)
-            
-            # if not user_to_edit:
-            #     logger.warning(SharedComponents.get_log_message("UserApi", "PUT", request.user, user_id, "User", "User not found"))
-            #     return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
-            
-            # serializer = UserSerializer( data=request.data, partial=False)
-            # if serializer.is_valid():
-            result = RolePermissionComponent.handle_action(subject_user, "user", "put", request.data, user_id)
-            if result == "User not found!":
-                logger.warning(SharedComponents.get_log_message("UserApi", "PUT", request.user, user_id, "User", "User not found"))
-
-                return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
-
-            logger.info(SharedComponents.get_log_message("UserApi", "PUT", request.user, user_id, "User", "User updated successfully"))
-            return Response(request.data, status=status.HTTP_200_OK)
-
-            logger.error(SharedComponents.get_log_message("UserApi", "PUT", request.user, user_id, "User", f"Validation error: {serializer.errors}"))
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            subject_user = AuthComponents.fetch_user_from_req(request)
+            data = request.data
+            result = RolePermissionComponent.handle_action(subject_user, "user", "put", data, user_id)
+            return Response(UserSerializer(result).data, status=status.HTTP_200_OK)
         
+        except ValueError:
+            raise ValidationError("The provided id must be an integer.")
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
         except User.DoesNotExist as ert:
             return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
         except ValidationError as err:
@@ -118,26 +102,8 @@ class UserApi(APIView):
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def patch(self, request, user_id):
-        """Partially update a user"""
-        logger.debug(SharedComponents.get_log_message("UserApi", "PATCH", request.user, user_id, "User", "Partially updating user"))
-        subject_user = AuthComponents.get_user(request)
-        if not subject_user or not isinstance(subject_user, User):
-            return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
-        user = UserComponents.get_user_by_id(user_id)
-        if not user:
-            logger.warning(SharedComponents.get_log_message("UserApi", "PATCH", request.user, user_id, "User", "User not found"))
-            return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = UserSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            UserComponents.update_user(serializer.validated_data,user_id)
-            logger.info(SharedComponents.get_log_message("UserApi", "PATCH", request.user, user_id, "User", "User partially updated successfully"))
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        logger.error(SharedComponents.get_log_message("UserApi", "PATCH", request.user, user_id, "User", f"Validation error: {serializer.errors}"))
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self, request, id=None):
+        return self.put(request,id)
 
     def delete(self, request, user_id):
         """Delete a user"""

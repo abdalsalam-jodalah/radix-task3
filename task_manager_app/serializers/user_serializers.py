@@ -38,6 +38,8 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def validate_email(self, value):
+        if self.instance and self.instance.email != value:
+            raise serializers.ValidationError({"email": "Email cannot be changed."})
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         if not re.match(email_regex, value):
             raise serializers.ValidationError({"email": "Enter a valid email address."})
