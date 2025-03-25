@@ -13,7 +13,8 @@ import logging
 from django.core.exceptions import ValidationError
 
 logger = logging.getLogger("components")
-
+from datetime import datetime
+from django.utils import timezone
 class TaskComponents:
     @staticmethod
     def get_all_tasks():
@@ -68,34 +69,66 @@ class TaskComponents:
     @staticmethod    
     def get_tasks_filtered(tasks, filters=None, search_query=None):
         try:
+            filtered_tasks = tasks
+
             if search_query:
-                tasks = tasks.filter(
-                    Q(title__icontains=search_query) |
-                    Q(description__icontains=search_query)
-                )
-            
+                query_lower = search_query.lower()
+                filtered_tasks = [
+                    task for task in filtered_tasks 
+                    if (hasattr(task, 'name') and query_lower in task.title.lower()) or
+                    (hasattr(task, 'description') and query_lower in task.description.lower())
+                ]
+        
             if filters:
                 if 'priority' in filters and filters['priority']:
-                    tasks = tasks.filter(priority=filters['priority'])
-                
+                    filtered_tasks = [
+                        task for task in filtered_tasks 
+                        if getattr(task, 'priority', None) == filters['priority']
+                    ]
                 if 'status' in filters and filters['status']:
-                    tasks = tasks.filter(status=filters['status'])
-
+                    filtered_tasks = [
+                        task for task in filtered_tasks 
+                        if getattr(task, 'status', None) == filters['status']
+                    ]
                 if 'category' in filters and filters['category']:
-                    tasks = tasks.filter(category=filters['category'] )
-               
-                #TODO: due_date 
-                if ('start_date' in filters and 'end_date' in filters and
-                filters['start_date'] and filters['end_date']):
+                    filtered_tasks = [
+                        task for task in filtered_tasks 
+                        if getattr(task, 'category', None).name == filters['category']
+                    ]               
+                if ('start_date' in filters and 'end_date' in filters and 'due_date' in filters and
+                        filters['start_date'] and filters['end_date']):
                     try:
-                        start_date = datetime.strptime(filters['start_date'], "%Y-%m-%d")
-                        end_date = datetime.strptime(filters['end_date'], "%Y-%m-%d")
-                        tasks = tasks.filter(due_date__range=(start_date, end_date))
-                    except ValueError:
+                        start_date_naive = datetime.strptime(filters['start_date'], "%Y-%m-%d %H:%M:%S")
+                        end_date_naive = datetime.strptime(filters['end_date'], "%Y-%m-%d %H:%M:%S")
+                        start_date = timezone.make_aware(start_date_naive)
+                        end_date = timezone.make_aware(end_date_naive)
+                        
+                        filtered_tasks = [
+                            task for task in filtered_tasks 
+                            #TODO: back here
+                            if start_date <= task.start_date <= end_date and start_date <= task.end_date <= end_date
+                        ]
+                    except ValueError as err:
+                        print(err) #skip this filter
+                        pass
+                if ('due_date' in filters and filters['due_date']):
+                    try:
+                        due_date_naive = datetime.strptime(filters['due_date'], "%Y-%m-%d %H:%M:%S")
+                        due_date = timezone.make_aware(due_date_naive)
+                        
+                        filtered_tasks = [
+                            task for task in filtered_tasks 
+                            if task.due_date <= due_date
+                        ]
+                    except ValueError as err:
+                        print(err) #skip this filter
                         pass
 
-            return tasks   
+            return filtered_tasks   
         except Exception as e:
+           
+            print("---------------")
+            print(e)
             logger.error(f"Error in get_task_from_tasks: {e}")
             raise e
         
