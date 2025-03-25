@@ -141,7 +141,7 @@ MIDDLEWARE = [
     'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
         "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "task_manager_app.middlewares.log_middleware.RequestResponseLoggingMiddleware"
+    # "task_manager_app.middlewares.log_middleware.RequestResponseLoggingMiddleware"
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
