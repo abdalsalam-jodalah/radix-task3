@@ -124,24 +124,6 @@ class TaskApi(APIView):
         except Exception as e:
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-    def delete(self, request, id=None):
-        try:
-            user = AuthComponents.get_user(request)
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            
-            result = RolePermissionComponent.handle_action(user,  "task","delete",id=id)
-
-            response_data, response_status = result
-            return Response(response_data, status=response_status)
-        except NotAcceptable as exp:
-                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-        except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
-        
     def patch(self, request, id=None):
         try:
             if id == None:
@@ -166,43 +148,72 @@ class TaskApi(APIView):
             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": f"An unexpected error occurred {e}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+        
+    def delete(self, request, id=None):
+        try:
+            if id == None:
+                return Response({"error": "Missing task id, or not found."}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user = AuthComponents.fetch_user_from_req(request)
+            message = RolePermissionComponent.handle_action(user, "task", "delete", id=id)
+            return Response(message, status=status.HTTP_200_OK)
+        
+        except ValueError as err:
+             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
-class ByUser(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsSingleDevice]
+class TaskApiByUser(APIView):
+    # permission_classes = [permissions.IsAuthenticated, IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request,id=None):
         try:
-            user = AuthComponents.get_user(request)
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+            user = AuthComponents.fetch_user_from_req(request)
+            tasks = TaskComponents.get_all_tasks_assigned_by_user(user)
+            if not tasks:
+                 return Response(tasks, status=status.HTTP_200_OK)
             if id:
-                task, response_data, response_status = TaskComponents.get_task_response(user, id)
-
-                if task is None or isinstance(task, Task ):
-                    return Response(response_data, status=response_status)
-                return Response(response_data, status=response_status)
+                task = TaskComponents.get_task_from_tasks(tasks, id)
+                return Response(TaskSerializer(task).data,  status=status.HTTP_200_OK)
             
+            search_query = request.GET.get("search", None)
             filters = {
                 "priority": request.GET.get("priority"),
                 "status": request.GET.get("status"),
                 "category": request.GET.get("category"),
                 "start_date": request.GET.get("start_date"),
                 "end_date": request.GET.get("end_date"),
+                "due_date": request.GET.get("due_date"),
             }
-            search_query = request.GET.get("search", None)
-            tasks = TaskComponents.get_tasks_assigned_by_user(user, filters)
+            filtered_tasks = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
             
             paginator = self.pagination_class()
-            paginated_tasks = paginator.paginate_queryset(tasks, request)
-
-            if paginated_tasks is None:
-                return Response({"error": "No tasks available for the given filters."}, status=status.HTTP_404_NOT_FOUND)
-
+            paginated_tasks = paginator.paginate_queryset(filtered_tasks, request)
             serializer = TaskSerializer(paginated_tasks, many=True)
             return paginator.get_paginated_response(serializer.data)
-        except Exception as e:  
-            logger.error(f"Error getting task: {e}")
-            return Response({"error": f"Invalid request:  {e} \n{e.with_traceback(e.__traceback__)}"}, status=status.HTTP_400_BAD_REQUEST)
-   
+        
+        except ValueError as err:
+             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)

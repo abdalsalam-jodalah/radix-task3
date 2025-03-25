@@ -52,6 +52,17 @@ class TaskComponents:
             raise e
         
     @staticmethod
+    def get_all_tasks_assigned_by_user(user):
+        try:
+            tasks = TaskRepository.get_tasks_by_user(user)
+            if not tasks:
+                return []
+            return tasks 
+        except Exception as e:
+            logger.error(f"Error in get_tasks_assigned_by_user: {e}")
+            raise e
+
+    @staticmethod
     def get_task_from_tasks(tasks, pk):
         try:
             for task in tasks:
@@ -247,48 +258,13 @@ class TaskComponents:
             logger.error(f"Error in updating: {e}")
             raise e
         
-
+    @staticmethod
     def delete_task(user, pk):
-        task = TaskRepository.get_task_by_id(pk)
-        if not task:
-            return {"detail": "Task not found"}, 404
-        if user.role != "admin" and task.assignee != user:
-            raise PermissionDenied("You can only delete your own tasks.")
-
-        TaskRepository.delete_task(task)
-        return {"detail": "Task deleted successfully"}, 204
-    
-    def partial_update_task(user, pk, data):
-        pass
-
-    def get_tasks_assigned_by_user(user, filters=None, search_query=None):
-        tasks = TaskRepository.get_tasks_by_user(user).order_by('-created_at')
-        if not tasks:
-            return {"detail": "Tasks not found for this user"}, 404
-        filterd_tasks, error = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
-        return filterd_tasks
-    
-    def get_tasks_assigned_for_user (user, filters=None, search_query=None):
-        tasks = TaskRepository.get_tasks_for_user(user).order_by('-created_at')
-        if not tasks:
-            return None, {"detail": "Tasks not found fro this user"}
-        filterd_tasks, error = TaskComponents.get_tasks_filtered(tasks, filters, search_query)
-        return filterd_tasks
-    
-
-
-
-    
- 
-    def get_task_response(user, pk):
-        task = TaskRepository.get_task_by_id(pk)
-        if not task and not isinstance(task, Task):
-            return None, {"detail": "Task not found"}, 404
-        serializer = TaskSerializer(task)
-       
+        try:
+            task = TaskRepository.get_task_by_id(pk)
+            TaskRepository.delete_task(task)
+            return {"detail": "Task deleted successfully"}
+        except Exception as e:
+            logger.error(f"Error in updating: {e}")
+            raise e
         
-        if user.role != "admin" and serializer.data.get('assignee') != user.id:
-            raise PermissionDenied("You can only view your own tasks.")
-        return task, serializer.data, 200
-        
-
