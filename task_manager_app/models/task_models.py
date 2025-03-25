@@ -16,7 +16,7 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
         verbose_name_plural = "Tasks"
         db_table = '_task'
         ordering = ['-created_at']
-
+    id = models.AutoField(editable=False, primary_key=True)
     assigner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_tasks")
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_tasks")
     category = models.ForeignKey(TaskCategory, on_delete=models.CASCADE, related_name="tasks")
@@ -51,7 +51,7 @@ class Task(BaseModelMixin):  # id, created_at, updated_at
         
     def validate_no_time_conflict(self):
         conflict_exists = Task.objects.filter(
-            assigner=self.assigner,
+            assignee=self.assignee,
             start_date__lt=self.end_date,
             due_date__gt=self.start_date
         ).exclude(id=self.id).exists()

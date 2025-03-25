@@ -14,8 +14,16 @@ class UserBriefSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name']
 
 class TaskSerializer(serializers.ModelSerializer):
-    assigner = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
-    assignee = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
+    assigner = serializers.SlugRelatedField(
+        queryset=User.objects.all(), 
+        write_only=True,  
+        slug_field="email"
+    )
+    assignee = serializers.SlugRelatedField(
+        queryset=User.objects.all(), 
+        write_only=True,  
+        slug_field="email"
+    )
     assigner_detail = UserBriefSerializer(source='assigner', read_only=True)
     assignee_detail = UserBriefSerializer(source='assignee', read_only=True)
     
@@ -42,8 +50,11 @@ class TaskSerializer(serializers.ModelSerializer):
             "updated_at",
         ]        
         extra_kwargs = {
-            "assigner": {"write_only": True, "required": True},
+            "assigner": {"write_only": True},
             "assignee": {"write_only": True, "required": True},
+            "name":{"required": True},
+            "category": {"required": True},
+            "due_date":{"required": True},
             "created_at": {"read_only": True},
             "updated_at": {"read_only": True},
         }

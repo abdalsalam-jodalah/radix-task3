@@ -84,7 +84,7 @@ class TaskComponents:
                 if 'category' in filters and filters['category']:
                     tasks = tasks.filter(category=filters['category'] )
                
-                #due_date 
+                #TODO: due_date 
                 if ('start_date' in filters and 'end_date' in filters and
                 filters['start_date'] and filters['end_date']):
                     try:
@@ -99,6 +99,83 @@ class TaskComponents:
             logger.error(f"Error in get_task_from_tasks: {e}")
             raise e
         
+    @staticmethod    
+    def fetch_task_data_from_req(request, user):
+        try:
+            body_data = json.loads(request.body.decode('utf-8')) 
+        except json.JSONDecodeError:
+            body_data = {}  
+        if not body_data:
+            raise ValidationError ({"error":"missing body data, try again"}) 
+        
+        data= {
+            "name": body_data.get("name"),
+            "description": body_data.get("description"),
+            "status": body_data.get("status"),
+            "priority": body_data.get("priority"),
+            "start_date": body_data.get("start_date"),
+            "end_date": body_data.get("end_date"),
+            "assigner": body_data.get("assigner"),
+            "assignee": body_data.get("assignee"),
+            "category": body_data.get("category"),
+            "due_date": body_data.get("due_date")
+        }
+        if not data["assigner"]:
+             data["assigner"]= user.email
+        serializer = TaskSerializer(data=data)
+        if serializer.is_valid():
+            return serializer.validated_data
+        raise ValidationError ({"error":f"data incorrect {serializer.errors}"})  
+    
+
+
+    @staticmethod
+    def handle_create_task_for_all(user, task_data):
+        try: 
+            task = TaskRepository.create_task(user, task_data)
+
+            if task and isinstance(task, Task):
+                return task
+            raise ValidationError({"error":"error in creating task, try again "})
+        except Exception as e:
+            logger.error(f"Error in get_task_from_tasks: {e}")
+            raise e
+        
+    @staticmethod
+    def handle_create_own_and_below_task(user, task_data):
+        try:
+            if task_data["assignee"].id != user.id: # check own part
+                if not task_data["assignee"].parent:# check below part
+                    raise ValidationError({"error": "Permission denied, u cant assign this user any task, nobody can assign him a task!"})
+                if user != task_data["assignee"].parent: 
+                    if not task_data["assignee"].parent.parent:
+                        raise ValidationError({"error": "Permission denied, u cant assign this user any task, only his parent can assign him a task!"})
+                    if user != task_data["assignee"].parent.parent:
+                        raise ValidationError({"error": "Permission denied, u cant assign this user any task"})
+                
+            task = TaskRepository.create_task(user, task_data)
+            if task and isinstance(task, Task):
+                return task      
+            raise ValidationError({"error":"error in creating task, try again "})
+        except Exception as e:
+            logger.error(f"Error in get_task_from_tasks: {e}")
+            raise e
+ 
+    @staticmethod
+    def handle_create_own_task(user, task_data):
+        try:
+            if task_data["assignee"].id != user.id: 
+                raise ValidationError({"error": "You can only assign tasks to yourself"})
+            task = TaskRepository.create_task(user, task_data)
+            if task and isinstance(task, Task):
+                return task
+            raise ValidationError({"error":"error in creating task, try again "})
+        except Exception as e:
+            logger.error(f"Error in get_task_from_tasks: {e}")
+            raise e      
+
+    # @staticmethod
+    # def is_parent_of_child(parent, child)
     def get_task_response(user, pk):
         task = TaskRepository.get_task_by_id(pk)
         if not task and not isinstance(task, Task):
@@ -174,52 +251,5 @@ class TaskComponents:
 
 
     
-    def _handle_create_task( user, data):
-        
-        serializer = TaskSerializer(data=data)
-        if serializer.is_valid():
-            task = TaskRepository.create_task(user, serializer.validated_data)
-            return task, status.HTTP_201_CREATED
-        
-        return None, Response({"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def _handle_create_own_and_below_task(user, data):
-     
-        if "assignee" in data and data["assignee"] != user.id:
-            if not TaskRepository.is_user_below(user, data["assignee"]):
-                return None, Response({"detail": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+ 
 
-        serializer = TaskSerializer(data=data)
-        if serializer.is_valid():
-            task = TaskRepository.create_task(user, serializer.validated_data)
-            return task, status.HTTP_201_CREATED
-        return None, Response({"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def _handle_own_create_task(user, data):
-    
-        if "assignee" in data and data["assignee"] != user.id:
-            return None, Response({"detail": "You can only assign tasks to yourself"}, status=status.HTTP_403_FORBIDDEN)
-
-        serializer = TaskSerializer(data=data)
-        if serializer.is_valid():
-            task = TaskRepository.create_task(user, serializer.validated_data)
-            return task, status.HTTP_201_CREATED
-        return None
-              
-    def fetch_user_data(request):
-        try:
-            body_data = json.loads(request.body.decode('utf-8')) 
-        except json.JSONDecodeError:
-            body_data = {}  
-        
-        return {
-            "name": body_data.get("name"),
-            "description": body_data.get("description"),
-            "status": body_data.get("status"),
-            "priority": body_data.get("priority"),
-            "start_date": body_data.get("start_date"),
-            "end_date": body_data.get("end_date"),
-            "assigner": body_data.get("assigner"),
-            "assignee": body_data.get("assignee"),
-            "category": body_data.get("category")
-        }

@@ -37,7 +37,7 @@ class TaskApi(APIView):
                  return Response(tasks, status=status.HTTP_200_OK)
             if id:
                 task = TaskComponents.get_task_from_tasks(tasks, id)
-                return Response(task,  status=status.HTTP_200_OK)
+                return Response(TaskSerializer(task).data,  status=status.HTTP_200_OK)
             
             search_query = request.GET.get("search", None)
             filters = {
@@ -72,35 +72,33 @@ class TaskApi(APIView):
 
     def post(self, request):
         try: 
-            user = AuthComponents.get_user(request)
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
-            data = TaskComponents.fetch_user_data(request)
-
-            result = RolePermissionComponent.handle_action(user, "task", "post",data=data)
-
-            task, response_status = result
-
-            if task and task.name:
-                notification = EmailNotification.objects.create(
-                    user=user,
-                    message=f"You have been assigned a new task: {task.name}",
-                    task=task
-                )
-                send_task_notification.delay(notification.id)
-                return Response( {"task": TaskSerializer(task).data}, status.HTTP_201_CREATED )
+            user = AuthComponents.fetch_user_from_req(request)
+            data = TaskComponents.fetch_task_data_from_req(request, user)
+            task = RolePermissionComponent.handle_action(user, "task", "post", data=data)
             
-            status_code = response_status.get("status")
-            return Response(
-                {"task": TaskSerializer(task).data} if task else {"error": "Invalid request"},
-                status=int(status_code)
+            notification = EmailNotification.objects.create(
+                user=user,
+                message=f"You have been assigned a new task: {task.name}",
+                task=task
             )
-        except NotAcceptable as exp:
-                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+            send_task_notification.delay(notification.id)
+            return Response( {"task": TaskSerializer(task).data}, status.HTTP_201_CREATED )
 
+        except ValueError as err:
+             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Error creating task: {e}\n{traceback.format_exc()}")
-            return Response({"error": f"Invalid request: {e}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
+
     def put(self, request, id=None):
 
         try:

@@ -42,6 +42,8 @@ class TaskRepository:
 
     @staticmethod
     def create_task(user, validated_data):
+        print(user, validated_data)
+        validated_data.pop('id', None)
         try:
             task = Task.objects.create(**validated_data)
             return task
