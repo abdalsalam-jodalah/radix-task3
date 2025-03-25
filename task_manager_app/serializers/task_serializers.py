@@ -17,6 +17,7 @@ class TaskSerializer(serializers.ModelSerializer):
     assigner = serializers.SlugRelatedField(
         queryset=User.objects.all(), 
         write_only=True,  
+        required= False,
         slug_field="email"
     )
     assignee = serializers.SlugRelatedField(
@@ -50,7 +51,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "updated_at",
         ]        
         extra_kwargs = {
-            "assigner": {"write_only": True},
+            "assigner": {"write_only": True,  "required": False},
             "assignee": {"write_only": True, "required": True},
             "name":{"required": True},
             "category": {"required": True},
@@ -76,3 +77,4 @@ class TaskSerializer(serializers.ModelSerializer):
                 {"priority": f"Invalid priority. Choose from {list(PriorityChoices.values)}"}
             )
         return value
+

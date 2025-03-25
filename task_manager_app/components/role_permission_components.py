@@ -221,6 +221,7 @@ class RolePermissionComponent:
                 return "Invalid action"
         except Exception as err:
             logger.error(f"RolePermissionComponent.dispatch error: {err}")
+            print("+++RolePermissionComponent.dispatch error: ", err)
             raise err
     
     @staticmethod
@@ -236,33 +237,36 @@ class RolePermissionComponent:
     
     @staticmethod
     def handle_action(user, action_model, action, data=None, pk=None):
-     
-        perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
-        specific_perms = [
-            perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
-            if perm.get("model") == action_model
-        ]
-        filtered_perms = specific_perms if specific_perms else [
-            perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
-            if perm.get("model") == "_"
-        ]
-        result = None
-        print(filtered_perms)
-        if filtered_perms:
-            perm = filtered_perms[0]
-            model_name = perm["model"]
-            action_name = perm["action"]
-            access_level = perm["access_level"]
-            result = RolePermissionComponent.dispatch(user, action_model, action_name, access_level, data, pk)
-        else:
-            logger.info(f"No matching permissions found for model: {action_model}")
+        try:
+            perms = RolePermissionComponent.get_permissions_by_role_decoded(user.role)
+            specific_perms = [
+                perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
+                if perm.get("model") == action_model
+            ]
+            filtered_perms = specific_perms if specific_perms else [
+                perm for perm in RolePermissionComponent.get_action_permissions(perms, action=action)
+                if perm.get("model") == "_"
+            ]
             result = None
-        
-        if result is None:
-            raise NotAcceptable(detail={"error": "You don't have permissions"})
-        elif result == "Invalid action":
-            raise NotAcceptable(detail={"error": "Invalid action"})
-        elif result == "Unauthorized":
-            raise NotAcceptable(detail={"error": "Invalid token or user not found."})
-        return result
-    
+            print(filtered_perms)
+            if filtered_perms:
+                perm = filtered_perms[0]
+                model_name = perm["model"]
+                action_name = perm["action"]
+                access_level = perm["access_level"]
+                result = RolePermissionComponent.dispatch(user, action_model, action_name, access_level, data, pk)
+                print(  "----------result", result)
+            else:
+                logger.info(f"No matching permissions found for model: {action_model}")
+                result = None
+            
+            if result is None:
+                raise NotAcceptable(detail={"error": "You don't have permissions"})
+            elif result == "Invalid action":
+                raise NotAcceptable(detail={"error": "Invalid action"})
+            elif result == "Unauthorized":
+                raise NotAcceptable(detail={"error": "Invalid token or user not found."})
+            return result
+        except Exception as err:
+            logger.error(f"RolePermissionComponent.handle_action error: {err}")
+            raise err

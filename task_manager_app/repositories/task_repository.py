@@ -8,6 +8,8 @@ class TaskRepository:
     def get_task_by_id(pk):
         try:
             task = Task.objects.filter(pk=pk).first()
+            if not task:
+                raise Exception({"error": "Task not found"})
             return task
         except Exception as e:
             logger.error(f"get_task_by_id failed for pk {pk}: {e}")
@@ -42,9 +44,8 @@ class TaskRepository:
 
     @staticmethod
     def create_task(user, validated_data):
-        print(user, validated_data)
-        validated_data.pop('id', None)
         try:
+
             task = Task.objects.create(**validated_data)
             return task
         except Exception as e:

@@ -109,7 +109,7 @@ class TaskComponents:
                             if start_date <= task.start_date <= end_date and start_date <= task.end_date <= end_date
                         ]
                     except ValueError as err:
-                        print(err) #skip this filter
+                        #skip this filter
                         pass
                 if ('due_date' in filters and filters['due_date']):
                     try:
@@ -121,41 +121,32 @@ class TaskComponents:
                             if task.due_date <= due_date
                         ]
                     except ValueError as err:
-                        print(err) #skip this filter
+                        #skip this filter
                         pass
 
             return filtered_tasks   
         except Exception as e:
-           
-            print("---------------")
-            print(e)
             logger.error(f"Error in get_task_from_tasks: {e}")
             raise e
         
     @staticmethod    
-    def fetch_task_data_from_req(request, user):
+    def fetch_task_data_from_req(request, user, method):
         try:
             body_data = json.loads(request.body.decode('utf-8')) 
         except json.JSONDecodeError:
             body_data = {}  
         if not body_data:
             raise ValidationError ({"error":"missing body data, try again"}) 
+        keys = ["name", "description", "status", "priority", "start_date", "end_date", "assigner", "assignee", "category", "due_date"]
+        data = {key: body_data[key] for key in keys if key in body_data}
         
-        data= {
-            "name": body_data.get("name"),
-            "description": body_data.get("description"),
-            "status": body_data.get("status"),
-            "priority": body_data.get("priority"),
-            "start_date": body_data.get("start_date"),
-            "end_date": body_data.get("end_date"),
-            "assigner": body_data.get("assigner"),
-            "assignee": body_data.get("assignee"),
-            "category": body_data.get("category"),
-            "due_date": body_data.get("due_date")
-        }
-        if not data["assigner"]:
-             data["assigner"]= user.email
-        serializer = TaskSerializer(data=data)
+        if method == "post" and not data.get("assigner"):
+            data["assigner"] = user.email
+        
+        partial = False
+        if method == "patch":
+            partial = True
+        serializer = TaskSerializer(data=data, partial=partial)
         if serializer.is_valid():
             return serializer.validated_data
         raise ValidationError ({"error":f"data incorrect {serializer.errors}"})  
@@ -207,51 +198,55 @@ class TaskComponents:
             logger.error(f"Error in get_task_from_tasks: {e}")
             raise e      
 
-    # @staticmethod
-    # def is_parent_of_child(parent, child)
-    def get_task_response(user, pk):
-        task = TaskRepository.get_task_by_id(pk)
-        if not task and not isinstance(task, Task):
-            return None, {"detail": "Task not found"}, 404
-        serializer = TaskSerializer(task)
-       
+    
+    
+    @staticmethod
+    def handle_update_any_task(user, id, task_data):
+        try:
         
-        if user.role != "admin" and serializer.data.get('assignee') != user.id:
-            raise PermissionDenied("You can only view your own tasks.")
-        return task, serializer.data, 200
+            old_task = TaskRepository.get_task_by_id(id)
+            task = TaskRepository.update_task(old_task, task_data)
+            return task
+        except Exception as e:
+            logger.error(f"Error in updating: {e}")
+            raise e
+
+    @staticmethod
+    def handle_update_own_below_task (user, id, task_data):
+        try:       
+            old_task = TaskRepository.get_task_by_id(id)
+
+            if old_task.assignee.id != user.id: # check own part
+                if not old_task.assignee.parent:# check below part
+                    raise ValidationError({"error": "Permission denied, u cant update this task, nobody can assign him a task except himself!"})
+                if user != old_task.assignee.parent: 
+                    if not old_task.assignee.parent.parent:
+                        raise ValidationError({"error": "Permission denied, u cant update this task, only his parent can update his task!"})
+                    if user != old_task.assignee.parent.parent:
+                        raise ValidationError({"error": "Permission denied, u cant update this task"})
+                    
+            task = TaskRepository.update_task(old_task, task_data)
+            if task and isinstance(task, Task):
+               return task
+            raise  ValidationError({"error": "error while updating data"})
+        except Exception as e:
+            logger.error(f"Error in updating: {e}")
+            raise e
+
+    @staticmethod
+    def handle_update_own_task(user, id, task_data):
+        try:
+            old_task = TaskRepository.get_task_by_id(id)
+            if old_task.assignee.id != user.id:
+                raise ValidationError({"error": "You can only update your own tasks"})     
+            task = TaskRepository.update_task(old_task, task_data)
+            if task and isinstance(task, Task):
+               return task
+            raise  ValidationError({"error": "error while updating data"})
+        except Exception as e:
+            logger.error(f"Error in updating: {e}")
+            raise e
         
-
-    def create_task(user, data):
-        serializer = TaskSerializer(data=data)
-        if serializer.is_valid(raise_exception=True):
-            task = TaskRepository.create_task(user, serializer)
-            return serializer.data, 201
-        return None, {"detail": "Invalid data"}, 400
-
-    def update_task(user, pk, data, access_level):
-        
-        task = TaskRepository.get_task_by_id(pk)
-        if not task:
-            return None, {"detail": "Task not found"}, 404
-
-        if access_level == "own" and task.assignee_id != user.id:
-            return None, {"detail": "You can only update your own tasks"}, 403
-
-        if access_level == "own+below":
-            if task.assignee_id != user.id and not TaskRepository.is_user_below(user, task.assignee_id):
-                return None, {"detail": "You can only update your tasks or those of your subordinates"}, 403
-
-        if access_level == "status":
-            allowed_fields = ["status"]
-            if any(field not in allowed_fields for field in data.keys()):
-                return None, {"detail": "You can only update the status field"}, 403
-
-        serializer = TaskSerializer(task, data=data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            TaskRepository.update_task(task, serializer)
-            return serializer.data, 200
-
-        return None, {"detail": "Invalid data"}, 400
 
     def delete_task(user, pk):
         task = TaskRepository.get_task_by_id(pk)
@@ -285,4 +280,15 @@ class TaskComponents:
 
     
  
+    def get_task_response(user, pk):
+        task = TaskRepository.get_task_by_id(pk)
+        if not task and not isinstance(task, Task):
+            return None, {"detail": "Task not found"}, 404
+        serializer = TaskSerializer(task)
+       
+        
+        if user.role != "admin" and serializer.data.get('assignee') != user.id:
+            raise PermissionDenied("You can only view your own tasks.")
+        return task, serializer.data, 200
+        
 

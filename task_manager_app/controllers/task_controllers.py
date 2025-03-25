@@ -73,7 +73,7 @@ class TaskApi(APIView):
     def post(self, request):
         try: 
             user = AuthComponents.fetch_user_from_req(request)
-            data = TaskComponents.fetch_task_data_from_req(request, user)
+            data = TaskComponents.fetch_task_data_from_req(request, user, "post")
             task = RolePermissionComponent.handle_action(user, "task", "post", data=data)
             
             notification = EmailNotification.objects.create(
@@ -100,23 +100,30 @@ class TaskApi(APIView):
             return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
 
     def put(self, request, id=None):
-
         try:
-            user = AuthComponents.get_user(request)
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+            if id == None:
+                return Response({"error": "Missing task id, or not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            result = RolePermissionComponent.handle_action(user, "task", "put",data=request.data, id=id)
-           
-            response_data, response_status = result
-            return Response(response_data, status=response_status)
-        except NotAcceptable as exp:
-                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
+            user = AuthComponents.fetch_user_from_req(request)
+            data = TaskComponents.fetch_task_data_from_req(request, user, "put")
+            task = RolePermissionComponent.handle_action(user=user, action_model="task",action= "put",data=data, pk=id)
+            return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+        
+        except ValueError as err:
+             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
+
 
     def delete(self, request, id=None):
         try:
@@ -137,18 +144,28 @@ class TaskApi(APIView):
         
     def patch(self, request, id=None):
         try:
-            user = AuthComponents.get_user(request)
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid token or user not found."}, status=status.HTTP_400_BAD_REQUEST)
+            if id == None:
+                return Response({"error": "Missing task id, or not found."}, status=status.HTTP_400_BAD_REQUEST)
             
-            response_data, response_status = TaskComponents.partial_update_task(user, id,request.data)
-            return Response(response_data, status=response_status)
-        except NotAcceptable as exp:
-                return Response({"error": f"{exp}"}, status=status.HTTP_406_NOT_ACCEPTABLE)
-
+            user = AuthComponents.fetch_user_from_req(request)
+            data = TaskComponents.fetch_task_data_from_req(request, user, "patch")
+            task = RolePermissionComponent.handle_action(user=user, action_model="task",action= "put",data=data, pk=id)
+            return Response(TaskSerializer(task).data, status=status.HTTP_200_OK)
+        
+        except ValueError as err:
+             return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except NotAcceptable as err:
+            return Response({"error": str(err)}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        except User.DoesNotExist as ert:
+            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttributeError as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
+        except AuthenticationFailed as err:
+            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f"Error creating task: {e}")
-            return Response({"error": f"Invalid request:  {e}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": f"An unexpected error occurred {e}"}, status=status.HTTP_400_BAD_REQUEST)
     
 
 class ByUser(APIView):
