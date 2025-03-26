@@ -95,7 +95,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'authApi',
     'task_manager_app',
-
+    'django_celery_beat',
     # 'social_django',
     # 'allauth',
     # 'allauth.account',
@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     # 'rest_framework_simplejwt.token_blacklist', 
      'drf_yasg',
     # 'oauth2_provider',
+     "corsheaders"
 ]
 
 REST_FRAMEWORK = {
@@ -137,7 +138,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     # 'allauth.account.middleware.AccountMiddleware',
-    'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
+    'task_manager_app.middlewares.middleware.ComprehensiveLoggingMiddleware',
+        "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    # "task_manager_app.middlewares.log_middleware.RequestResponseLoggingMiddleware"
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -162,12 +166,15 @@ DATABASES = {
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT'),
+        'TEST': {
+            'NAME': 'test_database',
+        }
     }
 }
-DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
+# DATABASE_ROUTERS = ['authApi.database_router.MyDatabaseRouter']
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=720),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=600),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'USER_ID_FIELD': 'id',
@@ -243,10 +250,10 @@ LOGGING = {
         "level": "DEBUG",  # Change to DEBUG to capture all logs
     },      
     "handlers": {
-        "views": {
+        "controllers": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "views.log"),
+            "filename": os.path.join(LOG_DIR, "controllers.log"),
             "formatter": "detailed",
         },
         "serializers": {
@@ -273,13 +280,35 @@ LOGGING = {
             "filename": os.path.join(LOG_DIR, "server.log"),
             "formatter": "detailed",
         },
+        "repositories": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "repositories.log"),
+            "formatter": "detailed",
+        },
+        "components": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": os.path.join(LOG_DIR, "components.log"),
+            "formatter": "detailed",
+        },
     },
    "loggers": {
-        "views": {"handlers": ["views"], "level": "DEBUG", "propagate": True},
+        "controllers": {"handlers": ["controllers"], "level": "DEBUG", "propagate": True},
         "serializers": {"handlers": ["serializers"], "level": "DEBUG", "propagate": True},
         "models": {"handlers": ["models"], "level": "DEBUG", "propagate": True},
         "requests": {"handlers": ["requests"], "level": "INFO", "propagate": True},
         "django": {"handlers": ["server"], "level": "INFO", "propagate": True},
+        "repositories": {  
+            "handlers": ["repositories"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "components": {  
+            "handlers": ["components"],
+            "level": "INFO",
+            "propagate": True,
+        },
 },
 }
 
@@ -296,3 +325,16 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
+]
+
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "authorization",
+    "device-name",
+    "device-type",
+]
+
+CORS_ALLOW_METHODS = ["GET", "POST","PUT", "DELETE", "OPTIONS"]

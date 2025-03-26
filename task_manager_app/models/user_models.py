@@ -1,9 +1,10 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password
-from django.utils.crypto import get_random_string
 from django.db import models
-import logging
+from django.core.exceptions import ValidationError
+from .role_models import Role
 
+import logging
 logger = logging.getLogger("models")
 
 class User(AbstractUser):
@@ -13,45 +14,48 @@ class User(AbstractUser):
         db_table = '_user'
         ordering = ['-date_joined']
         
-    class RoleChoices(models.TextChoices):
-        ADMIN = "admin", "Admin"
-        USER = "user", "User"
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(editable=False, primary_key=True)
     email = models.EmailField(unique=True)  
-    role = models.CharField(max_length=5, choices=RoleChoices.choices, default=RoleChoices.USER)
-    full_name = models.CharField(max_length=255, blank=True, null=True)
-    is_logedin = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Account Created At")
+    role = models.ForeignKey(Role, verbose_name=("user role"), on_delete=models.CASCADE, related_name="users")
+    is_logged_in = models.BooleanField(default=False)
+    created_at = models.DateTimeField(editable=False, auto_now_add=True, verbose_name="Account Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated At")
-
+    parent = models.ForeignKey("User", related_name="sub_users", on_delete=models.SET_NULL, null=True, blank=True)
+    username = None  
+    last_login = None
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["full_name"]  
+    REQUIRED_FIELDS = []
 
-    def save(self, *args, **kwargs):
-        """Custom save method with logging and security improvements."""
+    def validate_email(self):
         if not self.email:
-            self.email = f"user_{get_random_string(8)}"
+            raise ValidationError({"email": "Email is required."})
 
-        if not self.full_name:
-            self.full_name = self.email.split("@")[0]
+        if User.objects.filter(email=self.email).exclude(pk=self.pk).exists():
+                raise ValidationError({"email": "Email is already in use."})
+        
 
-        name_parts = self.full_name.split(" ", 1) 
-
-        self.first_name = name_parts[0]  
-        self.last_name = name_parts[1] if len(name_parts) > 1 else ""  
-
+    def hash_password_if_needed(self):
         if self.password and not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
+    
+    def validate_role(self):
+        # if self.role.name == "admin":
+        #     raise ValidationError({"role":"User cannot be assigned admin role."})
+        
+        if self.role.name and self.role.name not in Role.objects.values_list("name", flat=True):
+            raise ValidationError({"role":"Role does not exist."})
 
-        logger.debug(f"Saving user {self.email} with role {self.role}")
+    def clean(self):
+        super().clean()
+        self.validate_email()
+        self.hash_password_if_needed()
+        self.validate_role()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        logger.debug(f"Saving User {self.email} with role {self.role}")
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.email} ({self.role})"
-
-    def set_login_status(self, status: bool):
-        """Helper method to update login status with logging."""
-        self.is_logedin = status
-        self.save()
-        logger.info(f"User {self.email} login status updated to {status}")
-
+        return f"User: {self.email} ({self.role})"
+    

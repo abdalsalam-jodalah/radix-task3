@@ -1,0 +1,16 @@
+_:get:all
+_:get:own+below
+_:get:own
+
+_:post:all
+_:post:own+below
+_:post:own
+
+_:put:all
+_:put:own+below
+_:put:own
+
+_:delete:all
+_:delete:own+below
+_:delete:own
+

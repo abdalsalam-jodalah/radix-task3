@@ -1,5 +1,4 @@
 from django.urls import path
-
 from ..controllers.user_controllers import   UserApi
 
 urlpatterns = [
