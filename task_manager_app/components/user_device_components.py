@@ -24,9 +24,21 @@ class UserDeviceComponents:
         try:
             devices = UserDeviceRepository.filter_devices_by_user(user)
             for device in devices:
-                if device.device_token == device_token:
+                if device.device_token == device_token :
+                    # and isinstance(device, UserDevice)
                     return device
+            # raise ValidationError({"error": "Device not found."})
             return None
+        except Exception as e:
+            logger.error(f"fetch_device_by_user_and_token failed for user {user.id}: {e}")
+            raise Exception({"error": f"fetch_device_by_user_and_token failed for user {user.id}: {e}"})
+    @staticmethod
+    def fetch_user_devices(user):
+        try:
+            devices = UserDeviceRepository.filter_devices_by_user(user)
+            if not devices:
+                raise ValidationError({"error": "No devices found for user."})
+            return devices
         except Exception as e:
             logger.error(f"fetch_device_by_user_and_token failed for user {user.id}: {e}")
             raise Exception({"error": f"fetch_device_by_user_and_token failed for user {user.id}: {e}"})
@@ -52,7 +64,6 @@ class UserDeviceComponents:
                 activated_device = UserDeviceRepository.activate_device(existing_device, now(), True, None)
                 return activated_device
             elif status == "not_exist":
-                print(f"status: {status}, existing_device: {existing_device}, user: {user}, device_token: {device_token}")
                 new_device = UserDeviceRepository.create_device(user, device_token, True, now(), None)
                 return new_device
             else:

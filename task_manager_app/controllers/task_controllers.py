@@ -28,7 +28,8 @@ class TaskApi(APIView):
     # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
     # permission_classes = [ IsSingleDevice ]
     pagination_class = CustomPagination
-   
+    permission_classes = [IsSingleDevice]
+
     def get(self, request, id=None):
         try:
             user = AuthComponents.fetch_user_from_req(request)

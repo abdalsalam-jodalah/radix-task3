@@ -138,7 +138,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
     # 'allauth.account.middleware.AccountMiddleware',
-    'task_manager_app.middlewares.middleware.RequestLoggingMiddleware',
+    'task_manager_app.middlewares.middleware.ComprehensiveLoggingMiddleware',
         "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     # "task_manager_app.middlewares.log_middleware.RequestResponseLoggingMiddleware"

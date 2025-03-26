@@ -221,7 +221,6 @@ class RolePermissionComponent:
                 return "Invalid action"
         except Exception as err:
             logger.error(f"RolePermissionComponent.dispatch error: {err}")
-            print("+++RolePermissionComponent.dispatch error: ", err)
             raise err
     
     @staticmethod
@@ -248,14 +247,12 @@ class RolePermissionComponent:
                 if perm.get("model") == "_"
             ]
             result = None
-            print(filtered_perms)
             if filtered_perms:
                 perm = filtered_perms[0]
                 model_name = perm["model"]
                 action_name = perm["action"]
                 access_level = perm["access_level"]
                 result = RolePermissionComponent.dispatch(user, action_model, action_name, access_level, data, pk)
-                print(  "----------result", result)
             else:
                 logger.info(f"No matching permissions found for model: {action_model}")
                 result = None

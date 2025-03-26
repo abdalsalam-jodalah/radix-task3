@@ -29,9 +29,6 @@ class UserDispatcher(BaseDispatcher):
         raise ValidationError({"error": "Invalid access level"})
 
     def delete(self, subject_user, model, access_level, data, pk):
-
-        print(f"-e--------e-user : {UserComponents.get_user_by_id(pk)}")
-
         if access_level == AccessLevel.ALL.value:
             return UserComponents.delete_user(pk)
         elif access_level == AccessLevel.OWN_BELOW.value or access_level == AccessLevel.OWN.value:

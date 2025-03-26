@@ -17,7 +17,6 @@ class TaskCategoryApi(APIView):
 
     def get(self, request, pk=None):
         try:
-            print("test in cattt get")
             if pk:
                 category = TaskCategoryComponents.get_category(pk)
                 if not category:

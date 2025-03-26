@@ -26,8 +26,7 @@ class UserApi(APIView):
             return [] 
         else:
             # return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()] 
-            # return [IsSingleDevice()] 
-            return [] 
+            return [IsSingleDevice()] 
 
 
     def get(self, request, id=None):

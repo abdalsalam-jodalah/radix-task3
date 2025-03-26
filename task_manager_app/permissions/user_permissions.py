@@ -1,33 +1,38 @@
 from rest_framework.permissions import BasePermission
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError, NotAcceptable, AuthenticationFailed
 from ..models.user_device_models import UserDevice  
 from ..components.auth_components import AuthComponents
 from ..components.user_device_components import UserDeviceComponents
 
-from rest_framework.response import Response
-
 class IsSingleDevice(BasePermission):
     """
-    Permission class to enforce single active device per user.
+    Enforces single active device per user. instead of deactivate token
     """
-
     def has_permission(self, request, view):
-        print("000")
-        user_id = AuthComponents.extract_user_id_from_request(request)
-        if not user_id:
-            raise PermissionDenied({"error": "user id not founded in header."})
-        print("1111")
-        device_name = request.headers.get('Sec-Ch-Ua-Platform', 'Unknown Device')
-        device_type = request.headers.get('Sec-Ch-Ua', 'Unknown Device')
-        user_agent = request.headers.get('User-Agent', 'Unknown User Agent')
-
-        device_identifier = UserDeviceComponents.generate_device_id(user_id, device_name, device_type, user_agent)
-        print("222")
         try:
-            device = UserDeviceComponents.authenticate_device(user_id,device_identifier)
-            if device.get("status") == "exist_active":
-                raise PermissionDenied({"error": "Session expired. Please log in again from this device."})
-            return True
+            user = AuthComponents.fetch_user_from_req(request)
+            request_data = AuthComponents.fetch_headers_from_req(request)
+            device_token = UserDeviceComponents.generate_device_id(
+                user.id, 
+                request_data["device_name"], 
+                request_data["device_type"], 
+                request_data["user_agent"]
+            )
+            device = UserDeviceComponents.fetch_device_by_user_and_token(user, device_token)
+            
+            if device and device.is_active:
+                return True
+            print(  "device", device)
+            raise PermissionDenied("Session expired or u logged in from other Device. Please log in again.")
+        except PermissionDenied as err:
+            raise PermissionDenied({"error": str(err)})   
         except UserDevice.DoesNotExist as err:
-            raise PermissionDenied({"error": f"Device not registered. Please log in again.err: {err}"})
-        
+            raise PermissionDenied({"error": f"Device not registered. Please log in again. Err: {err}"})
+        except ValueError as err:
+            raise ValidationError({"error": str(err)})
+        except NotAcceptable as err:
+            raise NotAcceptable({"error": str(err)})
+        except AuthenticationFailed as err:
+            raise AuthenticationFailed({"error": str(err)})
+        except Exception as e:
+            raise PermissionDenied({"error": f"An unexpected error occurred: {e}"})

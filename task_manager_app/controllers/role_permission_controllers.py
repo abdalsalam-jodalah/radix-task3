@@ -18,7 +18,7 @@ logger = logging.getLogger("controllers")
 class RoleApi(APIView):
     authentication_classes = []
     # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
-    permission_classes = [ IsSingleDevice]
+    permission_classes = [IsSingleDevice]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
