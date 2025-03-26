@@ -16,7 +16,7 @@ from ..components.user_device_components import UserDeviceComponents
 from ..serializers.user_serializers import UserSerializer 
 import logging 
 logger = logging.getLogger("controllers")
-
+from ..decorators.handle_exceptions import handle_exceptions
 class AuthApi(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -32,65 +32,38 @@ class AuthApi(APIView):
             return self.log_out(request, *args, **kwargs)
         return self.login(request, *args, **kwargs)
     
+    @handle_exceptions
     def login(self, request, *args, **kwargs):
-        try:
-            request_data = AuthComponents.fetch_headers_from_req(request)
-            user_data = AuthComponents.fetch_login_data_from_req(request)
-            request_data.update(user_data)
+        request_data = AuthComponents.fetch_headers_from_req(request)
+        user_data = AuthComponents.fetch_login_data_from_req(request)
+        request_data.update(user_data)
 
-            user = AuthComponents.authenticate_user(email=request_data["email"], password=request_data["password"])
-            if not user or not isinstance(user, User):
-                return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
+        user = AuthComponents.authenticate_user(email=request_data["email"], password=request_data["password"])
+        if not user or not isinstance(user, User):
+            return Response({"error": "Invalid credentials!"}, status=status.HTTP_400_BAD_REQUEST)
 
-            tokens = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
+        tokens = AuthComponents.sign_user(user, request_data["device_name"], request_data["device_type"], request_data["user_agent"])
 
-            if not tokens or "refresh_token" not in tokens or "access_token" not in tokens:
-                return Response({"error": "Error signing user, invalid tokenization."}, status=status.HTTP_400_BAD_REQUEST)
+        if not tokens or "refresh_token" not in tokens or "access_token" not in tokens:
+            return Response({"error": "Error signing user, invalid tokenization."}, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                'message': 'Login successful!',
-                'access_token': tokens["access_token"],
-                'refresh_token': tokens["refresh_token"],
-                'user': UserSerializer(user).data
-            }, status=status.HTTP_200_OK)
+        return Response({
+            'message': 'Login successful!',
+            'access_token': tokens["access_token"],
+            'refresh_token': tokens["refresh_token"],
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_200_OK)
 
-                    
-        except UserDevice.DoesNotExist as err:
-            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
-        except User.DoesNotExist as ert:
-            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
-        except AuthenticationFailed as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except ValidationError as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except AttributeError as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
-
+    @handle_exceptions
     def log_out (self, request, *args, **kwargs):
-        try:
-            request_data = AuthComponents.fetch_headers_from_req(request)
-            token = AuthComponents.fetch_token_from_req(request)
-            user = AuthComponents.fetch_user_based_on_token(token)
-            device_token = UserDeviceComponents.generate_device_id(
-                user.id, request_data["device_name"], request_data["device_type"], request_data["user_agent"]
-            )
-            UserDeviceComponents.logout_device_based_on_token(device_token)
-            AuthComponents.logout_user(user)
-            AuthComponents.logout_token(token)
-            logout(request)
-            return Response({"message": "Logout successful!"}, status=status.HTTP_200_OK)
-        
-        except UserDevice.DoesNotExist as err:
-            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
-        except User.DoesNotExist as ert:
-            return Response({"error": str(err)}, status=status.HTTP_404_NOT_FOUND)
-        except AuthenticationFailed as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except ValidationError as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except AttributeError as err:
-            return Response({"error": str(err)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"error": f"An unexpected error occurred.{e}"}, status=status.HTTP_400_BAD_REQUEST)
+        request_data = AuthComponents.fetch_headers_from_req(request)
+        token = AuthComponents.fetch_token_from_req(request)
+        user = AuthComponents.fetch_user_based_on_token(token)
+        device_token = UserDeviceComponents.generate_device_id(
+            user.id, request_data["device_name"], request_data["device_type"], request_data["user_agent"]
+        )
+        UserDeviceComponents.logout_device_based_on_token(device_token)
+        AuthComponents.logout_user(user)
+        AuthComponents.logout_token(token)
+        logout(request)
+        return Response({"message": "Logout successful!"}, status=status.HTTP_200_OK)

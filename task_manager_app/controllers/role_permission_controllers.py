@@ -10,6 +10,7 @@ from ..components.shared_components import SharedComponents
 from ..serializers.role_permission_serailizers import RolePermissionSerializer
 from ..components.role_permission_components import RolePermissionComponent
 from ..pagination import CustomPagination
+from ..decorators.handle_exceptions import handle_exceptions
 
 import logging 
 logger = logging.getLogger("controllers")
@@ -18,51 +19,39 @@ class RoleApi(APIView):
     authentication_classes = []
     permission_classes = [IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
     pagination_class = CustomPagination
-
+   
+    @handle_exceptions   
     def get(self, request, pk=None):
-        try:
-            if pk:
-                role = RoleComponent.get_role(pk)
-                serializer = RoleSerializer(role)
-            else:
-                roles = RoleComponent.list_roles()
-                serializer = RoleSerializer(roles, many=True)
+        if pk:
+            role = RoleComponent.get_role(pk)
+            serializer = RoleSerializer(role)
+        else:
+            roles = RoleComponent.list_roles()
+            serializer = RoleSerializer(roles, many=True)
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "GET", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    @handle_exceptions   
     def post(self, request):
-        try:
-            serializer = RoleSerializer(data=request.data)
-            if serializer.is_valid():
-                RoleComponent.create_role(serializer.validated_data)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "POST", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-
+        serializer = RoleSerializer(data=request.data)
+        if serializer.is_valid():
+            RoleComponent.create_role(serializer.validated_data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+   
+    @handle_exceptions   
     def put(self, request, pk):
-        try:
-            role = RoleComponent.update_role(pk, request.data)
-            if role:
-                serializer = RoleSerializer(role)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "PUT", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+        role = RoleComponent.update_role(pk, request.data)
+        if role:
+            serializer = RoleSerializer(role)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    @handle_exceptions   
     def delete(self, request, pk):
-        try:
-            if RoleComponent.delete_role(pk):
-                return Response({"message": "Role deleted"}, status=status.HTTP_204_NO_CONTENT)
-            return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "DELETE", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if RoleComponent.delete_role(pk):
+            return Response({"message": "Role deleted"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class PermissionApi(APIView):
@@ -70,49 +59,40 @@ class PermissionApi(APIView):
     # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
     permission_classes = [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
     pagination_class = CustomPagination
+   
+    @handle_exceptions   
+    def get(self, request, pk=None):        
+        if pk:
+            permission = PermissionComponent.get_permission(pk)
+            serializer = PermissionSerializer(permission)
+            
+        else:
+            permissions = PermissionComponent.list_permissions()
+            serializer = PermissionSerializer(permissions, many=True)
 
-    def get(self, request, pk=None):
-        try:
-            if pk:
-                permission = PermissionComponent.get_permission(pk)
-                serializer = PermissionSerializer(permission)
-            else:
-                permissions = PermissionComponent.list_permissions()
-                serializer = PermissionSerializer(permissions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            SharedComponents.log_error("PermissionApi", "GET", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    @handle_exceptions   
     def post(self, request):
-        try:
-            serializer = PermissionSerializer(data=request.data)
-            if serializer.is_valid():
-                PermissionComponent.create_permission(serializer.validated_data)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            SharedComponents.log_error("PermissionApi", "POST", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = PermissionSerializer(data=request.data)
+        if serializer.is_valid():
+            PermissionComponent.create_permission(serializer.validated_data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+    @handle_exceptions   
     def put(self, request, pk):
-        try:
-            role = RoleComponent.update_role(pk, request.data)
-            if role:
-                serializer = RoleSerializer(role)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "PUT", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+        role = RoleComponent.update_role(pk, request.data)
+        if role:
+            serializer = RoleSerializer(role)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @handle_exceptions   
     def delete(self, request, pk):
-        try:
-            if RoleComponent.delete_role(pk):
-                return Response({"message": "Role deleted"}, status=status.HTTP_204_NO_CONTENT)
-            return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RoleApi", "DELETE", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if RoleComponent.delete_role(pk):
+            return Response({"message": "Role deleted"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"error": "Role not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class RolePermissionApi(APIView):
@@ -121,51 +101,43 @@ class RolePermissionApi(APIView):
     permission_classes = [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
 
     pagination_class = CustomPagination
-
+   
+    @handle_exceptions   
     def get(self, request, id=None):
-        try:
-            if id:
-                rp = RolePermissionComponent.get_role_permission(id)
-                if not rp:
-                    return Response({"error": "RolePermission not found"}, status=status.HTTP_404_NOT_FOUND)
-                serializer = RolePermissionSerializer(rp)
-            else:
-                rps = RolePermissionComponent.list_role_permissions()
-                serializer = RolePermissionSerializer(rps, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            SharedComponents.log_error("RolePermissionApi", "GET", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        
+        if id:
+            rp = RolePermissionComponent.get_role_permission(id)
+            if not rp:
+                return Response({"error": "RolePermission not found"}, status=status.HTTP_404_NOT_FOUND)
+            serializer = RolePermissionSerializer(rp)
+        else:
+            rps = RolePermissionComponent.list_role_permissions()
+            serializer = RolePermissionSerializer(rps, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+   
+    @handle_exceptions   
     def post(self, request):
-        try:
+        
             serializer = RolePermissionSerializer(data=request.data)
             if serializer.is_valid():
                 rp = RolePermissionComponent.create_role_permission(serializer.validated_data)
                 result_serializer = RolePermissionSerializer(rp)
                 return Response(result_serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            SharedComponents.log_error("RolePermissionApi", "POST", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-
+   
+    @handle_exceptions   
     def put(self, request, id):
-        try:
+        
             rp = RolePermissionComponent.update_role_permission(id, request.data)
             if rp:
                 serializer = RolePermissionSerializer(rp)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response({"error": "RolePermission not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RolePermissionApi", "PUT", e)
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
-
+   
+    @handle_exceptions   
     def delete(self, request, id):
-        try:
+        
             success = RolePermissionComponent.delete_role_permission(id)
             if success:
                 return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
             return Response({"error": "RolePermission not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            SharedComponents.log_error("RolePermissionApi", "DELETE", e)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
