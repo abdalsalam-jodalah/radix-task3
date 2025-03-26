@@ -135,15 +135,15 @@ class UserComponents:
                 all_children.extend(UserComponents.get_children(child))
             return all_children
         except Exception as e:
-            logger.error(f"Error in get_children for user id {user.id}: {e}")
+            logger.error(f"Error in get_children for user id {user}: {e}")
             raise e
 
     @staticmethod
     def get_own_below(user):
         try:
             own = UserComponents.get_own(user)
-            descendants = UserComponents.get_children(own)
-            users = [own] + descendants
+            descendants = UserComponents.get_children(own[0])
+            users = own + descendants
             if not users:
                 raise ValidationError({"error": "No users found!"})
             return users

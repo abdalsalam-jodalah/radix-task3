@@ -27,14 +27,12 @@ class UserApi(APIView):
         else:
             return [IsSingleDeviceANDIsAuthenticatedAndUpdateStatus()] 
 
-
     def get(self, request, id=None):
         try:
             subject_user = AuthComponents.fetch_user_from_req(request)
             users = RolePermissionComponent.handle_action(subject_user, "user", "get")
             if not users:
                 return Response(users, status=status.HTTP_200_OK)
-            
             if id:
                 user= UserComponents.get_user_from_users(users, id)
                 return Response(UserSerializer(user).data, status=status.HTTP_200_OK)

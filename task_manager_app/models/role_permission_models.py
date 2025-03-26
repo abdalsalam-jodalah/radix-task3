@@ -8,6 +8,7 @@ class RolePermission(models.Model):
     id = models.AutoField(editable=False, primary_key=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+    description = models.TextField(max_length=1000, default="No description")
 
     class Meta:
         unique_together = ('role', 'permission')
