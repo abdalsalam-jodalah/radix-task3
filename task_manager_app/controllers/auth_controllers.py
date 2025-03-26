@@ -8,8 +8,7 @@ from django.core.exceptions import ValidationError
 from task_manager_app.models.user_models import User
 from rest_framework.exceptions import AuthenticationFailed
 from ..models.user_device_models import UserDevice
-from ..permissions.user_permissions import IsSingleDevice
-from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
+from ..permissions.user_permissions import IsSingleDeviceANDIsAuthenticatedAndUpdateStatus
 from ..components.auth_components import AuthComponents
 from ..components.shared_components import SharedComponents 
 from ..components.user_components import UserComponents
@@ -22,8 +21,7 @@ class AuthApi(APIView):
     def get_permissions(self):
         if self.request.method == 'POST':
             return [] 
-        # return [IsAuthenticatedAndUpdateStatus(), IsSingleDevice()]
-        return [ IsSingleDevice()]
+        return [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus()]
 
     renderer_classes = [JSONRenderer]
     authentication_classes = []

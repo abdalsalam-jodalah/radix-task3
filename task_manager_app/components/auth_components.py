@@ -13,6 +13,7 @@ from .user_device_components import UserDeviceComponents
 import json
 import jwt
 from django.conf import settings
+from rest_framework_simplejwt.exceptions  import TokenError
 
 class AuthComponents():
     @staticmethod
@@ -139,30 +140,32 @@ class AuthComponents():
             raise ValidationError({"error": "Request object is required."})
         try:
             auth_header = AuthComponents.fetch_auth_header_from_req(request)
-        except Exception as e:
-            raise ValidationError({"error": f"Error fetching auth header. {e}"})
         
-        if not auth_header:
-            raise ValidationError({"error": "Authorization header is required."})
-        
-        token_str = None
+            if not auth_header:
+                raise ValidationError({"error": "Authorization header is required."})
+            
+            token_str = None
 
-        if auth_header.startswith("Bearer "):
-            parts = auth_header.split(" ")
-            if len(parts) >= 2:
-                token_str = parts[2]
+            if auth_header.startswith("Bearer "):
+                parts = auth_header.split(" ")
+                if len(parts) >= 2:
+                    token_str = parts[2]
+                else:
+                    token_str = parts[1]
             else:
-                token_str = parts[1]
-        else:
-            token_str = auth_header
-        
-        if not token_str or token_str == "Bearer":
-            raise ValidationError({"error": "Token not found in header."})
+                token_str = auth_header
+            
+            if not token_str or token_str == "Bearer":
+                raise ValidationError({"error": "Token not found in header."})
+            token = AccessToken(token_str)
+            if not token:
+                raise ValidationError({"error": "Invalid access token."})
+            return token
+        except TokenError as e:
+            raise TokenError({"error": f"Error fetching token. {e}", "token": token_str})
+        except Exception as e:
+            raise ValidationError({"error": f"Error fetching token. {e}"})
 
-        token = AccessToken(token_str)
-        if not token:
-            raise ValidationError({"error": "Invalid access token."})
-        return token
 
     @staticmethod
     def extract_userid_from_token(token):
@@ -259,21 +262,9 @@ class AuthComponents():
             return None
 
 
-    def decode_expired_token(auth_header):
-        if not auth_header:
-            return None
-
-        if auth_header.startswith("Bearer "):
-            parts = auth_header.split(" ")
-            if len(parts) == 2:
-                token_str = parts[1]
-            else:
-                token_str = parts[2]
-        else:
-            token_str = auth_header
-
+    def decode_expired_token(token):
         try:
-            decoded = jwt.decode(token_str, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
+            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"], options={"verify_exp": False})
             return decoded
         except jwt.InvalidTokenError as err:
             return None

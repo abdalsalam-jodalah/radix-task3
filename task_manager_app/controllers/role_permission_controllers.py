@@ -2,8 +2,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from ..permissions.user_permissions import IsSingleDevice
-from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
+from ..permissions.user_permissions import IsSingleDeviceANDIsAuthenticatedAndUpdateStatus
 from ..components.role_permission_components import RoleComponent, PermissionComponent
 from ..serializers.role_serializers import RoleSerializer
 from ..serializers.permission_serializers import  PermissionSerializer
@@ -17,8 +16,7 @@ logger = logging.getLogger("controllers")
 
 class RoleApi(APIView):
     authentication_classes = []
-    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
-    permission_classes = [IsSingleDevice]
+    permission_classes = [IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
@@ -70,7 +68,7 @@ class RoleApi(APIView):
 class PermissionApi(APIView):
     authentication_classes = []
     # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
-    permission_classes = [ IsSingleDevice]
+    permission_classes = [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
@@ -120,7 +118,7 @@ class PermissionApi(APIView):
 class RolePermissionApi(APIView):
     authentication_classes = []
     # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
-    permission_classes = [ IsSingleDevice]
+    permission_classes = [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
 
     pagination_class = CustomPagination
 

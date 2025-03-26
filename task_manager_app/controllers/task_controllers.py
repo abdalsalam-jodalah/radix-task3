@@ -7,9 +7,7 @@ import traceback
 from django.core.exceptions import ValidationError
 from rest_framework.exceptions import AuthenticationFailed
 
-from ..permissions.user_permissions import IsSingleDevice
-from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
-from ..permissions.role_based_permissions import HasRolePermission  
+from ..permissions.user_permissions import IsSingleDeviceANDIsAuthenticatedAndUpdateStatus
 from ..pagination import CustomPagination
 from ..components.auth_components import AuthComponents 
 from ..components.task_components import TaskComponents
@@ -25,10 +23,9 @@ logger = logging.getLogger("controllers")
 
 class TaskApi(APIView):
     authentication_classes = []
-    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice, HasRolePermission]
-    # permission_classes = [ IsSingleDevice ]
+
     pagination_class = CustomPagination
-    permission_classes = [IsSingleDevice]
+    permission_classes = [IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
 
     def get(self, request, id=None):
         try:

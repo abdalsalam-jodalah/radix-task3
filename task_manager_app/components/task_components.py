@@ -86,7 +86,7 @@ class TaskComponents:
                 query_lower = search_query.lower()
                 filtered_tasks = [
                     task for task in filtered_tasks 
-                    if (hasattr(task, 'name') and query_lower in task.title.lower()) or
+                    if (hasattr(task, 'name') and query_lower in task.name.lower()) or
                     (hasattr(task, 'description') and query_lower in task.description.lower())
                 ]
         

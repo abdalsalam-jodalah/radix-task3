@@ -1,18 +1,18 @@
 from rest_framework import  status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from ..permissions.user_permissions import IsSingleDevice
+from ..permissions.user_permissions import IsSingleDeviceANDIsAuthenticatedAndUpdateStatus
 from ..pagination import CustomPagination
 from ..components.task_category_components import TaskCategoryComponents
 from ..serializers.task_category_serializers import TaskCategorySerializer
-from ..permissions.auth_permissions import IsAuthenticatedAndUpdateStatus
 
 import logging
 logger = logging.getLogger("controllers")
 
 class TaskCategoryApi(APIView):
-    permission_classes = [ IsSingleDevice]
-    # permission_classes = [IsAuthenticatedAndUpdateStatus, IsSingleDevice]
+    authentication_classes = []
+
+    permission_classes = [ IsSingleDeviceANDIsAuthenticatedAndUpdateStatus]
     pagination_class = CustomPagination
 
     def get(self, request, pk=None):
